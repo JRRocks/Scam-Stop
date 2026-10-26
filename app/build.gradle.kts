@@ -56,7 +56,7 @@ android {
     }
 }
 
-// Le JDK d'Android Studio est en 21 : sans ceci Kotlin cible 21 et Java 17.
+// Android Studio's bundled JDK is 21; without this Kotlin targets 21 while Java targets 17.
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)

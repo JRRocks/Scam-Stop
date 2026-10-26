@@ -11,8 +11,10 @@ import android.os.Bundle
 import android.provider.Settings
 import android.view.View
 import android.widget.Button
+import android.widget.EditText
 import android.widget.Switch
 import android.widget.TextView
+import android.widget.Toast
 
 class MainActivity : Activity() {
     private lateinit var roleManager: RoleManager
@@ -21,6 +23,8 @@ class MainActivity : Activity() {
     private lateinit var notificationStatusText: TextView
     private lateinit var requestNotificationsButton: Button
     private lateinit var blockingSwitch: Switch
+    private lateinit var greetingText: EditText
+    private lateinit var voiceGreeting: VoiceGreeting
     private var isUpdatingBlockingSwitch = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,7 +42,35 @@ class MainActivity : Activity() {
         blockingSwitch.setOnCheckedChangeListener { _, enabled ->
             if (!isUpdatingBlockingSwitch) BlockingPreference.setEnabled(this, enabled)
         }
+
+        voiceGreeting = VoiceGreeting(applicationContext)
+        greetingText = findViewById(R.id.greeting_text)
+        greetingText.setText(
+            getPreferences(MODE_PRIVATE).getString(GREETING_KEY, getString(R.string.default_greeting)),
+        )
+        findViewById<Button>(R.id.speak_greeting).setOnClickListener {
+            if (!voiceGreeting.speak(currentGreeting())) toast(R.string.tts_unavailable)
+        }
+        findViewById<Button>(R.id.save_greeting).setOnClickListener {
+            val started = voiceGreeting.saveToDownloads(currentGreeting()) { saved ->
+                toast(if (saved) R.string.greeting_saved else R.string.greeting_save_failed)
+            }
+            if (!started) toast(R.string.tts_unavailable)
+        }
     }
+
+    override fun onDestroy() {
+        voiceGreeting.shutdown()
+        super.onDestroy()
+    }
+
+    private fun currentGreeting(): String {
+        val text = greetingText.text.toString().trim().ifEmpty { getString(R.string.default_greeting) }
+        getPreferences(MODE_PRIVATE).edit().putString(GREETING_KEY, text).apply()
+        return text
+    }
+
+    private fun toast(message: Int) = Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
 
     override fun onResume() {
         super.onResume()
@@ -120,5 +152,6 @@ class MainActivity : Activity() {
     private companion object {
         const val ROLE_REQUEST_CODE = 1
         const val NOTIFICATION_REQUEST_CODE = 2
+        const val GREETING_KEY = "greeting"
     }
 }

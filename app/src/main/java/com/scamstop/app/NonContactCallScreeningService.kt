@@ -26,9 +26,12 @@ class NonContactCallScreeningService : CallScreeningService() {
 
         // Omitting READ_CONTACTS makes Android withhold contact calls from this service.
         // Granting it would change that platform filtering behavior.
+        // Rejecting, not only disallowing, makes the network hand the caller straight to
+        // voicemail, where the recorded Scam Stop greeting plays.
+        val block = action == ScreeningAction.BLOCK
         val response = CallScreeningService.CallResponse.Builder()
-            .setDisallowCall(action == ScreeningAction.BLOCK)
-            .setRejectCall(false)
+            .setDisallowCall(block)
+            .setRejectCall(block)
             .build()
         respondToCall(callDetails, response)
 
