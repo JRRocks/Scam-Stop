@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">Non-Contact Call Blocker</string>
+    <string name="explanation">When blocking is enabled, calls from numbers not in your contacts are blocked before your phone rings.</string>
+    <string name="blocking_switch_label">Block calls from non-contacts</string>
+    <string name="call_screening_access_required">Android call-screening access is required before blocking can work.</string>
+    <string name="grant_call_screening_access">Grant call-screening access</string>
+    <string name="role_unavailable">Call screening unavailable</string>
+    <string name="notifications_enabled">Blocked-call notifications: Enabled</string>
+    <string name="notifications_disabled">Blocked-call notifications: Disabled</string>
+    <string name="enable_notifications">Enable notifications</string>
+    <string name="manage_notifications">Manage or disable notifications</string>
+    <string name="notification_controls_explanation">Use this button to grant notification access or open Android settings where blocked-call notifications can be turned off.</string>
+    <string name="notification_channel_name">Blocked calls</string>
+    <string name="notification_channel_description">Notifications for calls blocked because the number is not in Contacts</string>
+    <string name="blocked_call_notification_title">Call blocked</string>
+    <string name="blocked_call_notification_text">%1$s was not in your contacts.</string>
+    <string name="unknown_number">Unknown number</string>
+    <string name="contact_notice">Android—not this app—determines whether a number belongs to Contacts. This app does not read your contacts.</string>
+    <string name="hidden_caller_notice">Limitation: Android does not send restricted, unknown, unavailable, or payphone caller IDs to third-party call-screening apps.</string>
+</resources>
