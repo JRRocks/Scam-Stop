@@ -53,6 +53,18 @@ JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" ./gradlew test lint asse
 
 APK : `app/build/outputs/apk/debug/app-debug.apk`.
 
+### Sur GitHub
+
+Chaque push lance tests, lint et build (onglet **Actions**) ; l'APK `ScamStop.<version>.apk`
+est joint au run comme artefact. Pousser un tag `v<version>` (ex. `v2.0.0`) le publie aussi
+dans **Releases**, téléchargeable directement depuis le téléphone.
+
+Sans clé, l'APK est signé avec une clé de debug jetable : chaque nouvelle version demande de
+désinstaller la précédente. Pour des mises à jour normales, ajouter dans Settings > Secrets and
+variables > Actions les secrets `SCAMSTOP_KEYSTORE_BASE64` (le keystore encodé :
+`base64 -w0 mon.keystore`), `SCAMSTOP_STORE_PASSWORD`, `SCAMSTOP_KEY_ALIAS` et
+`SCAMSTOP_KEY_PASSWORD` : l'APK est alors signé avec la clé personnelle.
+
 ## Licence et origine
 
 Dérivé de [Non-Contact Call Blocker](https://github.com/franciscogouveia/android-call-blocker)

@@ -16,6 +16,8 @@ En session cloud (Linux) : JDK 17+ et Android SDK Platform 36 requis (`ANDROID_H
 `local.properties` non versionné avec `sdk.dir=...`), puis `./gradlew test lint assembleDebug`.
 Pas de lecteur `G:` dans le cloud : les étapes APK et miroir Drive ci-dessous se font au
 retour sur le PC ; dans le cloud, livrer par commit sur une branche.
+GitHub Actions (`.github/workflows/android.yml`) compile chaque push et joint l'APK au run ;
+un tag `v<version>` le publie dans Releases.
 
 # Règles de livraison — Scam Stop
 
