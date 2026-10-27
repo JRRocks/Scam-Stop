@@ -15,7 +15,7 @@ class RoleStateTest {
     }
 
     @Test
-    fun unavailableRoleIsNotActive() {
-        assertEquals(RoleState.NOT_ACTIVE, roleState(isRoleAvailable = false, isRoleHeld = false))
+    fun unavailableRoleIsUnavailable() {
+        assertEquals(RoleState.UNAVAILABLE, roleState(isRoleAvailable = false, isRoleHeld = false))
     }
 }

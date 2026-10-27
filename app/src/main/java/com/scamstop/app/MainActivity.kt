@@ -1,157 +1,41 @@
 package com.scamstop.app
 
-import android.Manifest
-import android.app.Activity
-import android.app.NotificationManager
-import android.app.role.RoleManager
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
-import android.view.View
-import android.widget.Button
-import android.widget.EditText
-import android.widget.Switch
-import android.widget.TextView
-import android.widget.Toast
+import android.service.quicksettings.TileService
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.scamstop.app.ui.LaunchRequest
+import com.scamstop.app.ui.ScamStopApp
+import com.scamstop.app.ui.ScamStopTheme
 
-class MainActivity : Activity() {
-    private lateinit var roleManager: RoleManager
-    private lateinit var roleWarningText: TextView
-    private lateinit var requestRoleButton: Button
-    private lateinit var notificationStatusText: TextView
-    private lateinit var requestNotificationsButton: Button
-    private lateinit var blockingSwitch: Switch
-    private lateinit var greetingText: EditText
-    private lateinit var voiceGreeting: VoiceGreeting
-    private var isUpdatingBlockingSwitch = false
+class MainActivity : ComponentActivity() {
+    private var launchRequest by mutableStateOf<LaunchRequest?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
-        roleManager = getSystemService(RoleManager::class.java)
-        roleWarningText = findViewById(R.id.role_warning)
-        requestRoleButton = findViewById(R.id.request_role)
-        notificationStatusText = findViewById(R.id.notification_status)
-        requestNotificationsButton = findViewById(R.id.request_notifications)
-        blockingSwitch = findViewById(R.id.blocking_switch)
-        requestRoleButton.setOnClickListener { requestCallScreeningRole() }
-        requestNotificationsButton.setOnClickListener { requestNotificationAccess() }
-        blockingSwitch.setOnCheckedChangeListener { _, enabled ->
-            if (!isUpdatingBlockingSwitch) BlockingPreference.setEnabled(this, enabled)
-        }
-
-        voiceGreeting = VoiceGreeting(applicationContext)
-        greetingText = findViewById(R.id.greeting_text)
-        greetingText.setText(
-            getPreferences(MODE_PRIVATE).getString(GREETING_KEY, getString(R.string.default_greeting)),
-        )
-        findViewById<Button>(R.id.speak_greeting).setOnClickListener {
-            if (!voiceGreeting.speak(currentGreeting())) toast(R.string.tts_unavailable)
-        }
-        findViewById<Button>(R.id.save_greeting).setOnClickListener {
-            val started = voiceGreeting.saveToDownloads(currentGreeting()) { saved ->
-                toast(if (saved) R.string.greeting_saved else R.string.greeting_save_failed)
+        if (savedInstanceState == null) launchRequest = requestFor(intent)
+        addOnNewIntentListener { launchRequest = requestFor(it) }
+        setContent {
+            ScamStopTheme {
+                ScamStopApp(request = launchRequest, onRequestHandled = { launchRequest = null })
             }
-            if (!started) toast(R.string.tts_unavailable)
         }
     }
 
-    override fun onDestroy() {
-        voiceGreeting.shutdown()
-        super.onDestroy()
+    private fun requestFor(intent: Intent?): LaunchRequest? = when (intent?.action) {
+        ACTION_SHOW_REJECTED_CALLS -> LaunchRequest.REJECTED_CALLS
+        TileService.ACTION_QS_TILE_PREFERENCES -> LaunchRequest.PAUSE
+        else -> null
     }
 
-    private fun currentGreeting(): String {
-        val text = greetingText.text.toString().trim().ifEmpty { getString(R.string.default_greeting) }
-        getPreferences(MODE_PRIVATE).edit().putString(GREETING_KEY, text).apply()
-        return text
-    }
-
-    private fun toast(message: Int) = Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-
-    override fun onResume() {
-        super.onResume()
-        updateScreeningAccess()
-        updateNotificationStatus()
-    }
-
-    @Suppress("DEPRECATION")
-    private fun requestCallScreeningRole() {
-        if (!roleManager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) return
-        startActivityForResult(
-            roleManager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING),
-            ROLE_REQUEST_CODE,
-        )
-    }
-
-    @Deprecated("The platform role request API still uses activity results on API 29")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == ROLE_REQUEST_CODE) updateScreeningAccess()
-    }
-
-    private fun updateScreeningAccess() {
-        val available = roleManager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)
-        val state = roleState(
-            isRoleAvailable = available,
-            isRoleHeld = available && roleManager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING),
-        )
-        val active = state == RoleState.ACTIVE
-        roleWarningText.visibility = if (active) View.GONE else View.VISIBLE
-        requestRoleButton.visibility = if (active) View.GONE else View.VISIBLE
-        requestRoleButton.isEnabled = available
-        requestRoleButton.setText(
-            if (available) R.string.grant_call_screening_access else R.string.role_unavailable,
-        )
-
-        isUpdatingBlockingSwitch = true
-        blockingSwitch.isEnabled = active
-        blockingSwitch.isChecked = active && BlockingPreference.isEnabled(this)
-        isUpdatingBlockingSwitch = false
-    }
-
-    private fun requestNotificationAccess() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) {
-            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), NOTIFICATION_REQUEST_CODE)
-            return
-        }
-
-        startActivity(
-            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                .putExtra(Settings.EXTRA_APP_PACKAGE, packageName),
-        )
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray,
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == NOTIFICATION_REQUEST_CODE) updateNotificationStatus()
-    }
-
-    private fun updateNotificationStatus() {
-        val manager = getSystemService(NotificationManager::class.java)
-        val enabled = manager.areNotificationsEnabled() &&
-            (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED)
-        notificationStatusText.setText(
-            if (enabled) R.string.notifications_enabled else R.string.notifications_disabled,
-        )
-        requestNotificationsButton.setText(
-            if (enabled) R.string.manage_notifications else R.string.enable_notifications,
-        )
-    }
-
-    private companion object {
-        const val ROLE_REQUEST_CODE = 1
-        const val NOTIFICATION_REQUEST_CODE = 2
-        const val GREETING_KEY = "greeting"
+    companion object {
+        /** Sent by the rejected-call notification. */
+        const val ACTION_SHOW_REJECTED_CALLS = "com.scamstop.app.action.SHOW_REJECTED_CALLS"
     }
 }

@@ -1,13 +1,11 @@
 package com.scamstop.app
 
-import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.SystemClock
 import android.telecom.Call
 import android.telecom.CallScreeningService
@@ -21,7 +19,14 @@ class NonContactCallScreeningService : CallScreeningService() {
             else -> CallDirection.UNKNOWN
         }
 
-        val action = screeningAction(direction, BlockingPreference.isEnabled(this))
+        val store = ScamStopStore.get(this)
+        val settings = store.settings.value
+        val number = callDetails.handle?.schemeSpecificPart
+        val action = screeningAction(
+            direction,
+            isBlocking = isBlocking(settings.isEnabled, settings.pausedUntil, System.currentTimeMillis()),
+            isAllowlisted = store.allowlist.value.matching(number) != null,
+        )
         if (action == ScreeningAction.IGNORE) return
 
         // Omitting READ_CONTACTS makes Android withhold contact calls from this service.
@@ -35,21 +40,16 @@ class NonContactCallScreeningService : CallScreeningService() {
             .build()
         respondToCall(callDetails, response)
 
-        if (action == ScreeningAction.BLOCK) {
-            showBlockedCallNotification(callDetails.handle?.schemeSpecificPart)
+        if (block) {
+            store.addRejectedCall(RejectedCall(number, System.currentTimeMillis()))
+            if (settings.notify) showBlockedCallNotification(number)
         }
     }
 
     private fun showBlockedCallNotification(number: String?) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
+        if (!canPostNotifications()) return
 
         val notificationManager = getSystemService(NotificationManager::class.java)
-        if (!notificationManager.areNotificationsEnabled()) return
-
         notificationManager.createNotificationChannel(
             NotificationChannel(
                 NOTIFICATION_CHANNEL_ID,
@@ -60,19 +60,13 @@ class NonContactCallScreeningService : CallScreeningService() {
             },
         )
 
-        val openApp = PendingIntent.getActivity(
-            this,
-            0,
-            Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-        val displayedNumber = number ?: getString(R.string.unknown_number)
         val notification = Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(getString(R.string.blocked_call_notification_title))
-            .setContentText(getString(R.string.blocked_call_notification_text, displayedNumber))
-            .setContentIntent(openApp)
+            .setContentText(formatPhoneNumber(number))
+            .setContentIntent(openRejectedCalls(this))
             .setAutoCancel(true)
+            .setShowWhen(true)
             .setCategory(Notification.CATEGORY_STATUS)
             .setVisibility(Notification.VISIBILITY_PRIVATE)
             .build()
@@ -82,5 +76,14 @@ class NonContactCallScreeningService : CallScreeningService() {
     private companion object {
         const val NOTIFICATION_CHANNEL_ID = "blocked_calls"
         val nextNotificationId = AtomicInteger(SystemClock.elapsedRealtime().toInt())
+
+        fun openRejectedCalls(context: Context): PendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            Intent(context, MainActivity::class.java)
+                .setAction(MainActivity.ACTION_SHOW_REJECTED_CALLS)
+                .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
     }
 }

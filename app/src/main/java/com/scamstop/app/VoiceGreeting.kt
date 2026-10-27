@@ -2,12 +2,19 @@ package com.scamstop.app
 
 import android.content.ContentValues
 import android.content.Context
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import androidx.core.content.edit
+import androidx.core.net.toUri
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.io.File
+import java.io.FileNotFoundException
 import java.io.IOException
 import java.util.Locale
 
@@ -16,33 +23,83 @@ import java.util.Locale
  * greeting reaches callers by being recorded as the carrier voicemail greeting.
  */
 internal class VoiceGreeting(private val context: Context) {
+    enum class Engine { STARTING, READY, UNAVAILABLE }
+
     private val mainHandler = Handler(Looper.getMainLooper())
+    private val _engine = MutableStateFlow(Engine.STARTING)
+    val engine: StateFlow<Engine> = _engine.asStateFlow()
+
+    private val _speaking = MutableStateFlow(false)
+    val speaking: StateFlow<Boolean> = _speaking.asStateFlow()
+
+    private val _exporting = MutableStateFlow(false)
+    val exporting: StateFlow<Boolean> = _exporting.asStateFlow()
+
     private val tts = TextToSpeech(context) { status ->
-        if (status == TextToSpeech.SUCCESS) onEngineReady()
+        if (status == TextToSpeech.SUCCESS) onEngineReady() else _engine.value = Engine.UNAVAILABLE
     }
 
     @Volatile
-    private var ready = false
+    private var pendingExport: PendingExport? = null
 
+    private class PendingExport(val target: Uri?, val onDone: (Uri?) -> Unit)
+
+    /** Id of the preview being played; callbacks for an older, flushed preview are ignored. */
     @Volatile
-    private var onSaved: ((Boolean) -> Unit)? = null
+    private var previewId: String? = null
+    private var previewCount = 0
 
     fun speak(text: String): Boolean {
-        if (!ready) return false
-        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, PREVIEW_ID)
-        return true
-    }
-
-    fun saveToDownloads(text: String, onSaved: (Boolean) -> Unit): Boolean {
-        if (!ready) return false
-        this.onSaved = onSaved
-        if (tts.synthesizeToFile(text, null, cacheFile(), EXPORT_ID) != TextToSpeech.SUCCESS) {
-            finishExport(false)
+        // QUEUE_FLUSH would also discard an export being rendered.
+        if (_engine.value != Engine.READY || pendingExport != null) return false
+        val id = "$PREVIEW_PREFIX${++previewCount}"
+        previewId = id
+        _speaking.value = true
+        if (tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, id) != TextToSpeech.SUCCESS) {
+            endPreview(id)
+            return false
         }
         return true
     }
 
-    fun shutdown() = tts.shutdown()
+    fun stop() {
+        if (pendingExport != null) return
+        previewId = null
+        tts.stop()
+        _speaking.value = false
+    }
+
+    private fun endPreview(utteranceId: String?) {
+        if (utteranceId != null && utteranceId == previewId) {
+            previewId = null
+            _speaking.value = false
+        }
+    }
+
+    /**
+     * Writes the greeting to Downloads. [previous] is the file this app exported last time:
+     * it is overwritten when it still exists, so repeated exports do not pile up copies.
+     */
+    fun export(text: String, previous: Uri?, onDone: (Uri?) -> Unit): Boolean {
+        if (_engine.value != Engine.READY || pendingExport != null) return false
+        // A preview still playing would hold the export back until it ends.
+        if (previewId != null) {
+            previewId = null
+            tts.stop()
+            _speaking.value = false
+        }
+        pendingExport = PendingExport(previous, onDone)
+        _exporting.value = true
+        if (tts.synthesizeToFile(text, null, cacheFile(), EXPORT_ID) != TextToSpeech.SUCCESS) {
+            finishExport(null)
+        }
+        return true
+    }
+
+    fun shutdown() {
+        pendingExport = null
+        tts.shutdown()
+    }
 
     private fun onEngineReady() {
         tts.setLanguage(Locale.FRANCE)
@@ -55,45 +112,117 @@ internal class VoiceGreeting(private val context: Context) {
             override fun onStart(utteranceId: String?) = Unit
 
             override fun onDone(utteranceId: String?) {
-                if (utteranceId == EXPORT_ID) finishExport(copyToDownloads())
+                if (utteranceId == EXPORT_ID) finishExport(copyToDownloads(pendingExport?.target)) else endPreview(utteranceId)
+            }
+
+            override fun onStop(utteranceId: String?, interrupted: Boolean) {
+                if (utteranceId == EXPORT_ID) finishExport(null) else endPreview(utteranceId)
             }
 
             @Suppress("OVERRIDE_DEPRECATION")
             override fun onError(utteranceId: String?) {
-                if (utteranceId == EXPORT_ID) finishExport(false)
+                if (utteranceId == EXPORT_ID) finishExport(null) else endPreview(utteranceId)
             }
         })
-        ready = true
+        _engine.value = Engine.READY
     }
 
-    private fun copyToDownloads(): Boolean {
+    private fun copyToDownloads(previous: Uri?): Uri? {
+        if (previous != null && overwrite(previous)) return previous
         val resolver = context.contentResolver
         val values = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, FILE_NAME)
-            put(MediaStore.MediaColumns.MIME_TYPE, "audio/x-wav")
+            put(MediaStore.MediaColumns.MIME_TYPE, MIME_TYPE)
+            put(MediaStore.MediaColumns.IS_PENDING, 1)
         }
-        val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: return false
+        val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: return null
         return try {
             val output = resolver.openOutputStream(uri) ?: throw IOException("No output stream")
             output.use { out -> cacheFile().inputStream().use { it.copyTo(out) } }
-            true
+            resolver.update(uri, ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }, null, null)
+            uri
         } catch (e: IOException) {
             resolver.delete(uri, null, null)
-            false
+            null
         }
     }
 
-    private fun finishExport(saved: Boolean) {
-        val callback = onSaved ?: return
-        onSaved = null
-        mainHandler.post { callback(saved) }
+    private fun overwrite(uri: Uri): Boolean = try {
+        val output = context.contentResolver.openOutputStream(uri, "wt") ?: throw FileNotFoundException()
+        output.use { out -> cacheFile().inputStream().use { it.copyTo(out) } }
+        true
+    } catch (e: IOException) {
+        false
+    } catch (e: SecurityException) {
+        false
+    } catch (e: IllegalArgumentException) {
+        false
+    }
+
+    private fun finishExport(uri: Uri?) {
+        val export = pendingExport ?: return
+        pendingExport = null
+        mainHandler.post {
+            _exporting.value = false
+            export.onDone(uri)
+        }
     }
 
     private fun cacheFile() = File(context.cacheDir, FILE_NAME)
 
-    private companion object {
-        const val FILE_NAME = "annonce-scam-stop.wav"
-        const val PREVIEW_ID = "preview"
-        const val EXPORT_ID = "export"
+    companion object {
+        const val MIME_TYPE = "audio/x-wav"
+        private const val FILE_NAME = "annonce-scam-stop.wav"
+        private const val PREVIEW_PREFIX = "preview-"
+        private const val EXPORT_ID = "export"
+
+        /** False when the user deleted the file or it belongs to a previous install. */
+        fun exists(context: Context, uri: Uri): Boolean = try {
+            context.contentResolver.query(uri, arrayOf(MediaStore.MediaColumns._ID), null, null, null)
+                ?.use { it.count > 0 } ?: false
+        } catch (e: SecurityException) {
+            false
+        } catch (e: IllegalArgumentException) {
+            false
+        }
     }
 }
+
+/** Greeting text and last export, in the preferences file the first version already used. */
+internal class GreetingPrefs(context: Context) {
+    private val prefs = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+
+    var text: String?
+        get() = prefs.getString(TEXT_KEY, null)
+        set(value) = prefs.edit { putString(TEXT_KEY, value) }
+
+    val export: GreetingExport?
+        get() = prefs.getString(EXPORT_URI_KEY, null)?.let {
+            GreetingExport(it.toUri(), prefs.getLong(EXPORT_TIME_KEY, 0L), prefs.getString(EXPORT_TEXT_KEY, "").orEmpty())
+        }
+
+    fun saveExport(export: GreetingExport?) {
+        prefs.edit {
+            if (export == null) {
+                remove(EXPORT_URI_KEY)
+                remove(EXPORT_TIME_KEY)
+                remove(EXPORT_TEXT_KEY)
+            } else {
+                putString(EXPORT_URI_KEY, export.uri.toString())
+                putLong(EXPORT_TIME_KEY, export.timeMillis)
+                putString(EXPORT_TEXT_KEY, export.text)
+            }
+        }
+    }
+
+    private companion object {
+        // Activity.getPreferences() of the first version wrote to "MainActivity.xml".
+        const val PREFERENCES_NAME = "MainActivity"
+        const val TEXT_KEY = "greeting"
+        const val EXPORT_URI_KEY = "export_uri"
+        const val EXPORT_TIME_KEY = "export_time"
+        const val EXPORT_TEXT_KEY = "export_text"
+    }
+}
+
+internal data class GreetingExport(val uri: Uri, val timeMillis: Long, val text: String)

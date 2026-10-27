@@ -1,30 +1,156 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Scam Stop</string>
-    <string name="explanation">Quand le blocage est actif, les appels des numéros absents de vos contacts sont rejetés avant que le téléphone sonne. Les SMS ne sont jamais bloqués.</string>
-    <string name="blocking_switch_label">Rejeter les appels hors contacts</string>
-    <string name="call_screening_access_required">Android doit autoriser Scam Stop à filtrer les appels pour que le blocage fonctionne.</string>
-    <string name="grant_call_screening_access">Autoriser le filtrage des appels</string>
-    <string name="role_unavailable">Filtrage des appels indisponible</string>
-    <string name="notifications_enabled">Notifications d\'appels rejetés : activées</string>
-    <string name="notifications_disabled">Notifications d\'appels rejetés : désactivées</string>
-    <string name="enable_notifications">Activer les notifications</string>
-    <string name="manage_notifications">Gérer ou couper les notifications</string>
-    <string name="notification_controls_explanation">Ce bouton autorise les notifications, ou ouvre les réglages Android pour les couper.</string>
-    <string name="notification_channel_name">Appels rejetés</string>
-    <string name="notification_channel_description">Une notification par appel rejeté parce que le numéro n\'est pas dans vos contacts</string>
-    <string name="blocked_call_notification_title">Appel rejeté</string>
-    <string name="blocked_call_notification_text">%1$s n\'est pas dans vos contacts.</string>
+    <string name="tile_label">Scam Stop</string>
+
+    <!-- Status banner -->
+    <string name="status_active_title">Protection active</string>
+    <string name="status_active_text">Les inconnus sont rejetés avant de sonner. Vos contacts et vos SMS passent normalement.</string>
+    <string name="status_paused_title">En pause jusqu\'à %1$s</string>
+    <string name="status_paused_text">Les inconnus sonnent normalement jusque-là. La protection reprendra toute seule.</string>
+    <string name="status_off_title">Protection désactivée</string>
+    <string name="status_off_text">Les inconnus font sonner votre téléphone. Activez « Rejeter les inconnus » pour les écarter.</string>
+    <string name="status_role_title">Autorisation requise</string>
+    <string name="status_role_text">Android doit autoriser Scam Stop à filtrer les appels pour rejeter les inconnus.</string>
+    <string name="status_unavailable_title">Filtrage indisponible</string>
+    <string name="status_unavailable_text">Ce téléphone ne permet pas à une application de filtrer les appels.</string>
+    <string name="grant_call_screening">Autoriser le filtrage</string>
+    <string name="resume_now">Reprendre maintenant</string>
+    <string name="time_tomorrow">demain %1$s</string>
+
+    <!-- Home -->
+    <string name="block_switch_title">Rejeter les inconnus</string>
+    <string name="block_switch_text">C\'est Android qui reconnaît vos contacts : Scam Stop ne les lit pas.</string>
+    <string name="pause_title">Mettre en pause</string>
+    <string name="pause_text">15 min, 1 h, 3 h ou jusqu\'à demain matin</string>
+    <string name="resume_text">Pause jusqu\'à %1$s</string>
+    <string name="tile_add_title">Ajouter la tuile aux Réglages rapides</string>
+    <string name="tile_add_text">Pour mettre en pause depuis le volet, sans ouvrir l\'app</string>
+    <string name="section_calls">Appels</string>
+    <string name="calls_title">Appels rejetés</string>
+    <string name="calls_none">Aucun pour l\'instant</string>
+    <plurals name="calls_today">
+        <item quantity="one">%1$d appel aujourd\'hui</item>
+        <item quantity="many">%1$d appels aujourd\'hui</item>
+        <item quantity="other">%1$d appels aujourd\'hui</item>
+    </plurals>
+    <string name="calls_last">Dernier : %1$s</string>
+    <string name="allowlist_title">Numéros autorisés</string>
+    <string name="allowlist_none">Ils sonnent sans être dans vos contacts</string>
+    <plurals name="allowlist_count">
+        <item quantity="one">%1$d numéro</item>
+        <item quantity="many">%1$d numéros</item>
+        <item quantity="other">%1$d numéros</item>
+    </plurals>
+    <string name="hidden_title">Numéros masqués</string>
+    <string name="hidden_text">Android ne les transmet pas à Scam Stop. Bloquez-les dans l\'app Téléphone.</string>
+    <string name="hidden_fallback">Ouvrez Téléphone > Paramètres > Numéros bloqués, puis bloquez les appels inconnus ou privés.</string>
+    <string name="section_voicemail">Messagerie</string>
+    <string name="greeting_row_todo">À créer, puis à installer sur votre messagerie</string>
+    <string name="greeting_row_saved">Enregistrée, à installer sur votre messagerie</string>
+    <string name="greeting_row_installed">Installée sur votre messagerie</string>
+    <string name="section_notifications">Notifications</string>
+    <string name="notify_title">Me prévenir à chaque appel rejeté</string>
+    <string name="notify_text_on">Une notification par appel, avec le numéro</string>
+    <string name="notify_text_off">Aucune notification</string>
+    <string name="notify_text_blocked">Bloquées dans les réglages Android : touchez pour les autoriser</string>
+
+    <!-- Setup checklist -->
+    <string name="setup_title" tools:ignore="PluralsCandidate">Mise en route · %1$d sur %2$d</string>
+    <string name="setup_role">Autoriser le filtrage des appels</string>
+    <string name="setup_notifications">Choisir les notifications</string>
+    <string name="setup_greeting">Installer l\'annonce vocale</string>
+    <string name="setup_role_action">Autoriser</string>
+    <string name="setup_notifications_action">Activer</string>
+    <string name="setup_greeting_action">Créer</string>
+    <string name="setup_hide">Masquer</string>
+    <string name="setup_done">Fait</string>
+
+    <!-- Pause sheet -->
+    <string name="pause_sheet_text">Les inconnus sonneront normalement. La protection reprendra toute seule.</string>
+    <string name="pause_15_minutes">15 minutes</string>
+    <string name="pause_1_hour">1 heure</string>
+    <string name="pause_3_hours">3 heures</string>
+    <string name="pause_until_morning">Jusqu\'à %1$s</string>
+    <string name="pause_ends">Jusqu\'à %1$s</string>
+
+    <!-- Rejected calls -->
+    <string name="calls_clear">Effacer le journal</string>
+    <string name="calls_cleared">Journal effacé</string>
+    <string name="calls_empty_title">Aucun appel rejeté</string>
+    <string name="calls_empty_text">Les numéros inconnus rejetés s\'afficheront ici. Vous pourrez les rappeler, leur écrire ou les autoriser.</string>
+    <string name="day_today">Aujourd\'hui</string>
+    <string name="day_yesterday">Hier</string>
     <string name="unknown_number">Numéro inconnu</string>
-    <string name="greeting_title">Annonce vocale (répondeur)</string>
-    <string name="greeting_explanation">Un appel rejeté part sur votre messagerie vocale. Pour que l\'appelant entende ce message, enregistrez-le comme annonce d\'accueil de votre messagerie avec la voix de synthèse ci-dessous.</string>
+    <string name="call_rejected_at">Rejeté à %1$s</string>
+    <string name="call_allowed_since">Autorisé depuis : %1$s</string>
+    <string name="call_allowed_since_unnamed">Autorisé depuis</string>
+    <string name="action_call">Rappeler</string>
+    <string name="action_sms">Envoyer un SMS</string>
+    <string name="action_add_contact">Ajouter aux contacts</string>
+    <string name="action_allow">Autoriser ce numéro</string>
+    <string name="action_allow_text">Il sonnera sans être dans vos contacts</string>
+    <string name="action_disallow">Retirer des numéros autorisés</string>
+    <string name="action_unavailable">Aucune application ne peut ouvrir cette action.</string>
+    <string name="hidden_number_note">Numéro inconnu : Android ne l\'a pas transmis, aucune action possible.</string>
+    <string name="undo">Annuler</string>
+    <string name="cancel">Annuler</string>
+
+    <!-- Allowlist -->
+    <string name="allowlist_intro">Ces numéros sonnent normalement sans être dans vos contacts : un livreur, un artisan, un rendez-vous.</string>
+    <string name="allowlist_add">Ajouter un numéro</string>
+    <string name="allowlist_empty_title">Aucun numéro autorisé</string>
+    <string name="allowlist_empty_text">Ajoutez un numéro ici, ou depuis les appels rejetés.</string>
+    <string name="allow_dialog_title">Autoriser ce numéro</string>
+    <string name="allow_dialog_text">%1$s sonnera normalement, sans être ajouté à vos contacts.</string>
+    <string name="allow_confirm">Autoriser</string>
+    <string name="edit_dialog_title">Numéro autorisé</string>
+    <string name="number_label">Numéro de téléphone</string>
+    <string name="number_error">Saisissez un numéro de téléphone.</string>
+    <string name="name_label">Nom (facultatif)</string>
+    <string name="name_hint">Ex. : Livreure</string>
+    <string name="save">Enregistrer</string>
+    <string name="remove">Retirer</string>
+    <string name="allowed_snackbar">%1$s peut maintenant vous appeler.</string>
+    <string name="removed_snackbar">%1$s ne sonnera plus.</string>
+
+    <!-- Voicemail greeting -->
+    <string name="greeting_title">Annonce vocale</string>
+    <string name="greeting_intro">Un appel rejeté part sur votre messagerie vocale. Pour que l\'appelant entende ce message, enregistrez-le comme annonce d\'accueil de votre messagerie.</string>
+    <string name="greeting_label">Texte de l\'annonce</string>
     <string name="default_greeting">Suite aux appels de scam incessants, je refuse tout appel inconnu. Pour me contacter, veuillez m\'envoyer un SMS en me disant qui vous êtes.</string>
-    <string name="greeting_hint">Texte de l\'annonce</string>
     <string name="speak_greeting">Écouter</string>
+    <string name="stop_greeting">Arrêter</string>
     <string name="save_greeting">Enregistrer en .wav</string>
-    <string name="greeting_saved">Annonce enregistrée dans Téléchargements</string>
-    <string name="greeting_save_failed">Échec de l\'enregistrement de l\'annonce</string>
-    <string name="tts_unavailable">Synthèse vocale pas encore prête, réessayez</string>
-    <string name="voicemail_steps">Pour l\'installer : appelez votre messagerie (appui long sur 1), choisissez de personnaliser l\'annonce d\'accueil, puis faites lire le fichier .wav par un autre appareil (PC, tablette) près du micro pendant l\'enregistrement.</string>
-    <string name="contact_notice">C\'est Android, et non cette application, qui détermine si un numéro est dans vos contacts. Scam Stop ne lit pas vos contacts.</string>
-    <string name="hidden_caller_notice">Limite : Android ne transmet pas les numéros masqués ou indisponibles aux applications de filtrage. Pour les bloquer aussi : application Téléphone > Paramètres > Bloquer des numéros > Bloquer les appels inconnus/privés.</string>
+    <string name="tts_starting">Préparation de la voix…</string>
+    <string name="tts_unavailable">La synthèse vocale n\'est pas disponible sur ce téléphone.</string>
+    <string name="greeting_exporting">Enregistrement de l\'annonce…</string>
+    <string name="greeting_save_failed">L\'annonce n\'a pas pu être enregistrée. Réessayez dans un instant.</string>
+    <string name="greeting_file_saved">Téléchargements · enregistrée à %1$s</string>
+    <string name="greeting_file_saved_on">Téléchargements · enregistrée le %1$s</string>
+    <string name="greeting_file_outdated">Le texte a changé depuis : enregistrez à nouveau.</string>
+    <string name="greeting_file_name">annonce-scam-stop.wav</string>
+    <string name="share">Partager</string>
+    <string name="open">Ouvrir</string>
+    <string name="share_greeting_title">Envoyer l\'annonce</string>
+    <string name="install_title">Installer sur la messagerie</string>
+    <string name="install_step_share">Envoyez le .wav vers un PC ou une tablette.</string>
+    <string name="install_step_share_missing">Enregistrez d\'abord l\'annonce en .wav.</string>
+    <string name="install_step_call">Appelez votre messagerie (appui long sur 1), puis choisissez de personnaliser l\'annonce d\'accueil.</string>
+    <string name="install_step_call_action">Ouvrir le clavier</string>
+    <string name="install_step_record">Pendant l\'enregistrement, faites jouer le .wav près du micro du téléphone.</string>
+    <string name="install_step_record_action">C\'est fait</string>
+    <string name="install_done">Annonce installée</string>
+
+    <!-- Notifications and tile -->
+    <string name="notification_channel_name">Appels rejetés</string>
+    <string name="notification_channel_description">Une notification par appel inconnu rejeté</string>
+    <string name="blocked_call_notification_title">Appel inconnu rejeté</string>
+    <string name="tile_active">Active</string>
+    <string name="tile_paused">Pause · %1$s</string>
+    <string name="tile_off">Désactivée</string>
+    <string name="tile_needs_role">Autorisation requise</string>
+    <string name="tile_unavailable">Indisponible</string>
+
+    <string name="back">Retour</string>
+    <string name="more_options">Plus d\'options</string>
 </resources>

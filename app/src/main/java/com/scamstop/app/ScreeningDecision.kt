@@ -12,11 +12,17 @@ internal enum class ScreeningAction {
     IGNORE,
 }
 
+/**
+ * Android only hands this service calls from numbers outside the contacts, so every
+ * incoming call reaching it is unknown: rejected while blocking is on, unless the user
+ * allowed that number in the app.
+ */
 internal fun screeningAction(
     direction: CallDirection,
-    isBlockingEnabled: Boolean,
+    isBlocking: Boolean,
+    isAllowlisted: Boolean = false,
 ): ScreeningAction = when {
     direction != CallDirection.INCOMING -> ScreeningAction.IGNORE
-    isBlockingEnabled -> ScreeningAction.BLOCK
+    isBlocking && !isAllowlisted -> ScreeningAction.BLOCK
     else -> ScreeningAction.ALLOW
 }
