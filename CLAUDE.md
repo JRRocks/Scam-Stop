@@ -6,11 +6,16 @@ générateur d'annonce vocale pour la messagerie. Base : franciscogouveia/androi
 Ne jamais ajouter `READ_CONTACTS` : c'est son absence qui fait qu'Android ne transmet que
 les appels inconnus au service.
 
-Compiler / vérifier (`java` n'est pas dans le PATH) :
+Compiler / vérifier sur le PC Windows (`java` n'est pas dans le PATH) :
 
 ```bash
 JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" ./gradlew test lint assembleDebug
 ```
+
+En session cloud (Linux) : JDK 17+ et Android SDK Platform 36 requis (`ANDROID_HOME` ou
+`local.properties` non versionné avec `sdk.dir=...`), puis `./gradlew test lint assembleDebug`.
+Pas de lecteur `G:` dans le cloud : les étapes APK et miroir Drive ci-dessous se font au
+retour sur le PC ; dans le cloud, livrer par commit sur une branche.
 
 # Règles de livraison — Scam Stop
 
@@ -28,7 +33,7 @@ JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" ./gradlew test lint asse
 5. **Message final** : indiquer la version déposée, le chemin de l'APK et le résultat du resync.
 
 ## Git
-- Remote : `origin` = à définir (pas encore de dépôt GitHub), branche `main`.
+- Remote : `origin` = https://github.com/JRRocks/Scam-Stop, branche `main`.
 - Commit après chaque changement livré et vérifié, avec un message court et clair en anglais.
 - **Push sur `origin main` seulement si je le demande.** Pas de force-push, pas de `--no-verify`.
 - Ne jamais commiter de secrets (`.env`, `local.properties`, `keystore.properties`, clés API) ni les APK.
