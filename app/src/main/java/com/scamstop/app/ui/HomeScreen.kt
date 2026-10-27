@@ -189,7 +189,7 @@ internal fun HomeScreen(
                         RowDivider()
                         SettingRow(
                             title = stringResource(R.string.pause_change_title),
-                            supporting = stringResource(R.string.pause_ends, context.formatPauseEnd(status.pausedUntil, now)),
+                            supporting = stringResource(R.string.pause_text),
                             icon = R.drawable.ic_ms_timer,
                             onClick = { showPauseSheet = true },
                         )

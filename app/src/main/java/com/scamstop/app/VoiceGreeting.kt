@@ -105,13 +105,25 @@ internal class VoiceGreeting(private val context: Context) {
         tts.shutdown()
     }
 
-    private fun onEngineReady() {
+    /**
+     * Picks the French voice again: the user may just have installed it from the
+     * "Installer la voix" button. Skipped while something is playing or being written.
+     */
+    fun refreshLanguage() {
+        if (_engine.value == Engine.READY && pendingExport == null && previewId == null) selectFrenchVoice()
+    }
+
+    private fun selectFrenchVoice() {
         _frenchMissing.value = tts.setLanguage(Locale.FRANCE) < TextToSpeech.LANG_AVAILABLE
         // On Google's engine the best offline voices are the neural ones.
         tts.voices
             ?.filter { it.locale.language == "fr" && it.locale.country == "FR" && !it.isNetworkConnectionRequired }
             ?.maxByOrNull { it.quality }
             ?.let { tts.setVoice(it) }
+    }
+
+    private fun onEngineReady() {
+        selectFrenchVoice()
         tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(utteranceId: String?) = Unit
 

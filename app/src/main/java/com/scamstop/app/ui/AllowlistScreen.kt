@@ -66,11 +66,16 @@ internal fun AllowlistScreen(store: ScamStopStore, onBack: () -> Unit) {
         onBack = onBack,
         snackbarHostState = snackbar,
         floatingActionButton = {
+            // The content overload keeps the label in the button's semantics; the text/icon
+            // overload clears it, and TalkBack would only say "Bouton". Blue: the screen's main action.
             ExtendedFloatingActionButton(
-                text = { Text(stringResource(R.string.allowlist_add)) },
-                icon = { Icon(painterResource(R.drawable.ic_ms_add), contentDescription = null) },
                 onClick = { adding = true },
-            )
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ) {
+                Icon(painterResource(R.drawable.ic_ms_add), contentDescription = null)
+                Text(stringResource(R.string.allowlist_add), modifier = Modifier.padding(start = 12.dp))
+            }
         },
     ) { padding ->
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
