@@ -35,6 +35,10 @@ internal class VoiceGreeting(private val context: Context) {
     private val _exporting = MutableStateFlow(false)
     val exporting: StateFlow<Boolean> = _exporting.asStateFlow()
 
+    /** The engine works but has no French voice: it would read the greeting with another accent. */
+    private val _frenchMissing = MutableStateFlow(false)
+    val frenchMissing: StateFlow<Boolean> = _frenchMissing.asStateFlow()
+
     private val tts = TextToSpeech(context) { status ->
         if (status == TextToSpeech.SUCCESS) onEngineReady() else _engine.value = Engine.UNAVAILABLE
     }
@@ -102,7 +106,7 @@ internal class VoiceGreeting(private val context: Context) {
     }
 
     private fun onEngineReady() {
-        tts.setLanguage(Locale.FRANCE)
+        _frenchMissing.value = tts.setLanguage(Locale.FRANCE) < TextToSpeech.LANG_AVAILABLE
         // On Google's engine the best offline voices are the neural ones.
         tts.voices
             ?.filter { it.locale.language == "fr" && it.locale.country == "FR" && !it.isNetworkConnectionRequired }
@@ -112,7 +116,10 @@ internal class VoiceGreeting(private val context: Context) {
             override fun onStart(utteranceId: String?) = Unit
 
             override fun onDone(utteranceId: String?) {
-                if (utteranceId == EXPORT_ID) finishExport(copyToDownloads(pendingExport?.target)) else endPreview(utteranceId)
+                if (utteranceId != EXPORT_ID) return endPreview(utteranceId)
+                // Nothing to copy when the screen gave up on this export (shutdown).
+                val export = pendingExport ?: return
+                finishExport(copyToDownloads(export.target))
             }
 
             override fun onStop(utteranceId: String?, interrupted: Boolean) {
@@ -172,9 +179,19 @@ internal class VoiceGreeting(private val context: Context) {
 
     companion object {
         const val MIME_TYPE = "audio/x-wav"
-        private const val FILE_NAME = "annonce-scam-stop.wav"
+        const val FILE_NAME = "annonce-scam-stop.wav"
         private const val PREVIEW_PREFIX = "preview-"
         private const val EXPORT_ID = "export"
+
+        /** MediaStore may have renamed the file ("annonce-scam-stop (1).wav") to avoid a clash. */
+        fun displayName(context: Context, uri: Uri): String? = try {
+            context.contentResolver.query(uri, arrayOf(MediaStore.MediaColumns.DISPLAY_NAME), null, null, null)
+                ?.use { if (it.moveToFirst()) it.getString(0) else null }
+        } catch (e: SecurityException) {
+            null
+        } catch (e: IllegalArgumentException) {
+            null
+        }
 
         /** False when the user deleted the file or it belongs to a previous install. */
         fun exists(context: Context, uri: Uri): Boolean = try {
@@ -198,17 +215,24 @@ internal class GreetingPrefs(context: Context) {
 
     val export: GreetingExport?
         get() = prefs.getString(EXPORT_URI_KEY, null)?.let {
-            GreetingExport(it.toUri(), prefs.getLong(EXPORT_TIME_KEY, 0L), prefs.getString(EXPORT_TEXT_KEY, "").orEmpty())
+            GreetingExport(
+                uri = it.toUri(),
+                name = prefs.getString(EXPORT_NAME_KEY, null) ?: VoiceGreeting.FILE_NAME,
+                timeMillis = prefs.getLong(EXPORT_TIME_KEY, 0L),
+                text = prefs.getString(EXPORT_TEXT_KEY, "").orEmpty(),
+            )
         }
 
     fun saveExport(export: GreetingExport?) {
         prefs.edit {
             if (export == null) {
                 remove(EXPORT_URI_KEY)
+                remove(EXPORT_NAME_KEY)
                 remove(EXPORT_TIME_KEY)
                 remove(EXPORT_TEXT_KEY)
             } else {
                 putString(EXPORT_URI_KEY, export.uri.toString())
+                putString(EXPORT_NAME_KEY, export.name)
                 putLong(EXPORT_TIME_KEY, export.timeMillis)
                 putString(EXPORT_TEXT_KEY, export.text)
             }
@@ -220,9 +244,10 @@ internal class GreetingPrefs(context: Context) {
         const val PREFERENCES_NAME = "MainActivity"
         const val TEXT_KEY = "greeting"
         const val EXPORT_URI_KEY = "export_uri"
+        const val EXPORT_NAME_KEY = "export_name"
         const val EXPORT_TIME_KEY = "export_time"
         const val EXPORT_TEXT_KEY = "export_text"
     }
 }
 
-internal data class GreetingExport(val uri: Uri, val timeMillis: Long, val text: String)
+internal data class GreetingExport(val uri: Uri, val name: String, val timeMillis: Long, val text: String)

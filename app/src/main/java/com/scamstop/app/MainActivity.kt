@@ -19,7 +19,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        if (savedInstanceState == null) launchRequest = requestFor(intent)
+        RejectedCallNotifications.ensureChannel(this)
+        // Reopening from Recents replays the original intent: do not reopen the calls or the pause sheet.
+        val fromRecents = intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0
+        if (savedInstanceState == null && !fromRecents) launchRequest = requestFor(intent)
         addOnNewIntentListener { launchRequest = requestFor(it) }
         setContent {
             ScamStopTheme {

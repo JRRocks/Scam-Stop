@@ -1,6 +1,8 @@
 package com.scamstop.app.ui
 
 import android.Manifest
+import android.content.Intent
+import android.provider.Settings
 import android.app.StatusBarManager
 import android.app.role.RoleManager
 import android.content.Context
@@ -13,11 +15,12 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -26,7 +29,9 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -48,6 +53,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -60,6 +66,8 @@ import com.scamstop.app.ProtectionKind
 import com.scamstop.app.ProtectionStatus
 import com.scamstop.app.ProtectionTileService
 import com.scamstop.app.R
+import com.scamstop.app.RejectedCallNotifications
+import com.scamstop.app.appNotificationsEnabled
 import com.scamstop.app.ScamStopStore
 import com.scamstop.app.SetupProgress
 import com.scamstop.app.formatPauseEnd
@@ -107,8 +115,21 @@ internal fun HomeScreen(
     }
     val status = protectionStatus(system.role, settings.isEnabled, settings.pausedUntil, now)
 
+    val roleDenied = stringResource(R.string.role_denied)
+    val openSettings = stringResource(R.string.open_settings)
+    // After "Ne plus demander", Android answers at once without showing anything:
+    // point to the default apps settings, where the role can still be given.
     val roleLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         system.refresh()
+        if (!system.roleHeld) {
+            scope.launch {
+                if (snackbar.showSnackbar(roleDenied, openSettings, duration = SnackbarDuration.Long) ==
+                    SnackbarResult.ActionPerformed
+                ) {
+                    context.tryStart(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+                }
+            }
+        }
     }
     val requestRole: () -> Unit = {
         val roleManager = context.getSystemService(RoleManager::class.java)
@@ -116,7 +137,7 @@ internal fun HomeScreen(
             roleLauncher.launch(roleManager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING))
         }
     }
-    val enableNotifications = rememberNotificationToggle(store, system, settings.notificationPermissionAsked)
+    val enableNotifications = rememberNotificationToggle(store, system, settings.notificationPermissionAsked, snackbar)
 
     var showPauseSheet by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(pauseSheetRequested) {
@@ -128,7 +149,7 @@ internal fun HomeScreen(
 
     ScreenScaffold(title = stringResource(R.string.app_name), onBack = null, snackbarHostState = snackbar) { padding ->
         ScrollingContent(padding) {
-            StatusBanner(status, onGrantRole = requestRole, onResume = { store.resume() })
+            StatusBanner(status, now, onGrantRole = requestRole, onResume = { store.resume() })
 
             val setup = SetupProgress(
                 roleDone = system.roleHeld,
@@ -140,6 +161,7 @@ internal fun HomeScreen(
                     progress = setup,
                     onGrantRole = requestRole,
                     onEnableNotifications = { enableNotifications(true) },
+                    greetingAction = stringResource(if (greetingSaved) R.string.setup_greeting_open else R.string.setup_greeting_action),
                     onOpenGreeting = onOpenGreeting,
                     onHide = { store.hideSetup() },
                 )
@@ -166,10 +188,10 @@ internal fun HomeScreen(
                     ProtectionKind.PAUSED -> {
                         RowDivider()
                         SettingRow(
-                            title = stringResource(R.string.resume_now),
-                            supporting = stringResource(R.string.resume_text, context.formatPauseEnd(status.pausedUntil, now)),
-                            icon = R.drawable.ic_ms_play_arrow,
-                            onClick = { store.resume() },
+                            title = stringResource(R.string.pause_change_title),
+                            supporting = stringResource(R.string.pause_ends, context.formatPauseEnd(status.pausedUntil, now)),
+                            icon = R.drawable.ic_ms_timer,
+                            onClick = { showPauseSheet = true },
                         )
                     }
                     else -> Unit
@@ -240,12 +262,14 @@ internal fun HomeScreen(
 
             SectionHeader(stringResource(R.string.section_notifications))
             val notifyChecked = settings.notify && system.notificationsAllowed
+            // "Blocked" only once Android was asked; a fresh install has simply not chosen yet.
+            val blocked = settings.notify && (settings.notificationPermissionAsked || system.notificationPermission)
             SwitchRow(
                 title = stringResource(R.string.notify_title),
                 supporting = stringResource(
                     when {
                         notifyChecked -> R.string.notify_text_on
-                        settings.notify -> R.string.notify_text_blocked
+                        blocked -> R.string.notify_text_blocked
                         else -> R.string.notify_text_off
                     },
                 ),
@@ -257,13 +281,7 @@ internal fun HomeScreen(
     }
 
     if (showPauseSheet) {
-        PauseSheet(
-            onDismiss = { showPauseSheet = false },
-            onPause = { end ->
-                store.pauseUntil(end)
-                showPauseSheet = false
-            },
-        )
+        PauseSheet(onDismiss = { showPauseSheet = false }, onPause = { end -> store.pauseUntil(end) })
     }
 }
 
@@ -291,10 +309,25 @@ private fun rememberNotificationToggle(
     store: ScamStopStore,
     system: SystemState,
     permissionAsked: Boolean,
+    snackbar: SnackbarHostState,
 ): (Boolean) -> Unit {
     val context = LocalContext.current
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+    val scope = rememberCoroutineScope()
+    val refused = stringResource(R.string.notifications_refused)
+    val openSettings = stringResource(R.string.open_settings)
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         system.refresh()
+        val activity = context.findActivity()
+        // Refused for good (or before this version tracked it): Android will not ask again.
+        if (!granted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && activity != null &&
+            !activity.shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
+        ) {
+            scope.launch {
+                if (snackbar.showSnackbar(refused, openSettings) == SnackbarResult.ActionPerformed) {
+                    context.openAppNotificationSettings()
+                }
+            }
+        }
     }
     return { enable ->
         store.setNotify(enable)
@@ -311,7 +344,8 @@ private fun rememberNotificationToggle(
                         launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
                     }
                 }
-                !system.notificationsAllowed -> context.openAppNotificationSettings()
+                !context.appNotificationsEnabled() -> context.openAppNotificationSettings()
+                RejectedCallNotifications.isChannelBlocked(context) -> context.openRejectedCallsChannelSettings()
             }
         }
     }
@@ -342,7 +376,7 @@ private data class BannerStyle(
 )
 
 @Composable
-private fun StatusBanner(status: ProtectionStatus, onGrantRole: () -> Unit, onResume: () -> Unit) {
+private fun StatusBanner(status: ProtectionStatus, now: Long, onGrantRole: () -> Unit, onResume: () -> Unit) {
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
     val state = LocalStatusColors.current
@@ -353,7 +387,7 @@ private fun StatusBanner(status: ProtectionStatus, onGrantRole: () -> Unit, onRe
         )
         ProtectionKind.PAUSED -> BannerStyle(
             state.warn, state.onWarn, R.drawable.ic_ms_pause_circle,
-            stringResource(R.string.status_paused_title, context.formatPauseEnd(status.pausedUntil)),
+            stringResource(R.string.status_paused_title, context.formatPauseEnd(status.pausedUntil, now)),
             stringResource(R.string.status_paused_text),
         )
         ProtectionKind.OFF -> BannerStyle(
@@ -405,6 +439,7 @@ private fun SetupCard(
     progress: SetupProgress,
     onGrantRole: () -> Unit,
     onEnableNotifications: () -> Unit,
+    greetingAction: String,
     onOpenGreeting: () -> Unit,
     onHide: () -> Unit,
 ) {
@@ -436,7 +471,7 @@ private fun SetupCard(
             SetupItem(
                 progress.greetingDone,
                 stringResource(R.string.setup_greeting),
-                stringResource(R.string.setup_greeting_action),
+                greetingAction,
                 onOpenGreeting,
             )
         }
@@ -463,37 +498,43 @@ private fun SetupItem(done: Boolean, title: String, action: String, onAction: ()
 @Composable
 private fun PauseSheet(onDismiss: () -> Unit, onPause: (Long) -> Unit) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val start = remember { ZonedDateTime.now() }
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
-        Text(
-            stringResource(R.string.pause_title),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(horizontal = 16.dp),
-        )
-        Text(
-            stringResource(R.string.pause_sheet_text),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
-        )
-        val nowMillis = start.toInstant().toEpochMilli()
-        PauseOption.entries.forEach { option ->
-            val end = pauseEnd(option, start).toInstant().toEpochMilli()
-            val endLabel = context.formatPauseEnd(end, nowMillis)
-            val title = when (option) {
-                PauseOption.MINUTES_15 -> stringResource(R.string.pause_15_minutes)
-                PauseOption.HOUR_1 -> stringResource(R.string.pause_1_hour)
-                PauseOption.HOURS_3 -> stringResource(R.string.pause_3_hours)
-                PauseOption.UNTIL_MORNING -> stringResource(R.string.pause_until_morning, endLabel)
-            }
-            SettingRow(
-                title = title,
-                supporting = if (option == PauseOption.UNTIL_MORNING) null else stringResource(R.string.pause_ends, endLabel),
-                icon = if (option == PauseOption.UNTIL_MORNING) R.drawable.ic_ms_bedtime else R.drawable.ic_ms_timer,
-                // The label was computed when the sheet opened; the pause starts now.
-                onClick = { onPause(pauseEnd(option, ZonedDateTime.now()).toInstant().toEpochMilli()) },
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        // Scrolls at large font sizes, where the options no longer fit.
+        Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
+            Text(
+                stringResource(R.string.pause_title),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(horizontal = 16.dp).semantics { heading() },
             )
+            Text(
+                stringResource(R.string.pause_sheet_text),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
+            )
+            val nowMillis = start.toInstant().toEpochMilli()
+            PauseOption.entries.forEach { option ->
+                val endLabel = context.formatPauseEnd(pauseEnd(option, start).toInstant().toEpochMilli(), nowMillis)
+                val title = when (option) {
+                    PauseOption.MINUTES_15 -> stringResource(R.string.pause_15_minutes)
+                    PauseOption.HOUR_1 -> stringResource(R.string.pause_1_hour)
+                    PauseOption.HOURS_3 -> stringResource(R.string.pause_3_hours)
+                    PauseOption.UNTIL_MORNING -> stringResource(R.string.pause_until_morning, endLabel)
+                }
+                SettingRow(
+                    title = title,
+                    supporting = if (option == PauseOption.UNTIL_MORNING) null else stringResource(R.string.pause_ends, endLabel),
+                    icon = if (option == PauseOption.UNTIL_MORNING) R.drawable.ic_ms_bedtime else R.drawable.ic_ms_timer,
+                    onClick = {
+                        // The label was computed when the sheet opened; the pause starts now.
+                        onPause(pauseEnd(option, ZonedDateTime.now()).toInstant().toEpochMilli())
+                        scope.launch { sheetState.hide() }.invokeOnCompletion { if (!sheetState.isVisible) onDismiss() }
+                    },
+                )
+            }
         }
-        Spacer(Modifier.size(16.dp))
     }
 }

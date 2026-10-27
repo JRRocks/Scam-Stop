@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
@@ -57,7 +57,8 @@ internal fun AllowlistScreen(store: ScamStopStore, onBack: () -> Unit) {
     val snackbar = remember { SnackbarHostState() }
     val allowlist by store.allowlist.collectAsStateWithLifecycle()
     var adding by rememberSaveable { mutableStateOf(false) }
-    var editing by remember { mutableStateOf<AllowedNumber?>(null) }
+    var editingNumber by rememberSaveable { mutableStateOf<String?>(null) }
+    val editing = editingNumber?.let { number -> allowlist.firstOrNull { it.number == number } }
     val undoLabel = stringResource(R.string.undo)
 
     ScreenScaffold(
@@ -100,13 +101,13 @@ internal fun AllowlistScreen(store: ScamStopStore, onBack: () -> Unit) {
                         )
                     }
                 }
-                items(allowlist, key = { it.number }) { entry ->
+                itemsIndexed(allowlist, key = { index, entry -> "$index-${entry.number}" }) { _, entry ->
                     val formatted = context.formatPhoneNumber(entry.number)
                     SettingRow(
                         title = entry.label.ifBlank { formatted },
                         supporting = if (entry.label.isBlank()) null else formatted,
                         icon = R.drawable.ic_ms_how_to_reg,
-                        onClick = { editing = entry },
+                        onClick = { editingNumber = entry.number },
                         trailing = {
                             Icon(
                                 painterResource(R.drawable.ic_ms_edit),
@@ -135,14 +136,14 @@ internal fun AllowlistScreen(store: ScamStopStore, onBack: () -> Unit) {
     editing?.let { entry ->
         EditNumberDialog(
             entry = entry,
-            onDismiss = { editing = null },
+            onDismiss = { editingNumber = null },
             onSave = { label ->
                 store.allow(entry.number, label)
-                editing = null
+                editingNumber = null
             },
             onRemove = {
                 store.disallow(entry.number)
-                editing = null
+                editingNumber = null
                 val name = entry.label.ifBlank { context.formatPhoneNumber(entry.number) }
                 scope.launch {
                     if (snackbar.showSnackbar(resources.getString(R.string.removed_snackbar, name), undoLabel) ==

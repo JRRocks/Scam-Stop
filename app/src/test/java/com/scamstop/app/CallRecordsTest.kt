@@ -40,6 +40,38 @@ class CallRecordsTest {
         assertTrue(PhoneNumbers.isDialable("06 12"))
         assertFalse(PhoneNumbers.isDialable("+3"))
         assertFalse(PhoneNumbers.isDialable("Livreure"))
+        assertFalse(PhoneNumbers.isDialable("000"))
+    }
+
+    @Test
+    fun bracketedTrunkZeroIsIgnored() {
+        assertTrue(PhoneNumbers.same("+33 (0)6 12 34 56 78", "+33612345678"))
+        assertTrue(PhoneNumbers.same("+33 ( 0 ) 6 12 34 56 78", "06 12 34 56 78"))
+    }
+
+    @Test
+    fun handlesWithoutDigitsMatchOnlyThemselves() {
+        assertTrue(PhoneNumbers.same("alice@example.com", "Alice@example.com"))
+        assertFalse(PhoneNumbers.same("alice@example.com", "bob@example.com"))
+        assertTrue(PhoneNumbers.same("000", "000"))
+    }
+
+    @Test
+    fun allowingTwiceNeverDuplicatesAndRemovalAlwaysWorks() {
+        for (number in listOf("000", "alice@example.com", "06 12 34 56 78")) {
+            val allowlist = emptyList<AllowedNumber>()
+                .withAllowed(AllowedNumber(number, "a"))
+                .withAllowed(AllowedNumber(number, "b"))
+            assertEquals(listOf(AllowedNumber(number, "b")), allowlist)
+            assertEquals(emptyList<AllowedNumber>(), allowlist.without(number))
+        }
+    }
+
+    @Test
+    fun renamingKeepsThePlaceInTheList() {
+        val allowlist = listOf(AllowedNumber("0611111111", "A"), AllowedNumber("0622222222", "B"))
+            .withAllowed(AllowedNumber("+33 6 11 11 11 11", "A2"))
+        assertEquals(listOf("A2", "B"), allowlist.map { it.label })
     }
 
     @Test
@@ -74,6 +106,12 @@ class CallRecordsTest {
     fun allowlistSurvivesStorageWithAwkwardLabels() {
         val stored = RecordCodec.encodeAllowlist(listOf(AllowedNumber("0612345678", "Livreure\tdu\nlundi")))
         assertEquals(listOf(AllowedNumber("0612345678", "Livreure du lundi")), RecordCodec.decodeAllowlist(stored))
+    }
+
+    @Test
+    fun duplicatedStoredNumbersAreDropped() {
+        val stored = "000\ta\n000\tb"
+        assertEquals(listOf(AllowedNumber("000", "a")), RecordCodec.decodeAllowlist(stored))
     }
 
     @Test

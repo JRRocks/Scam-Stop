@@ -39,6 +39,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -61,9 +62,11 @@ internal fun ScreenScaffold(
     content: @Composable (PaddingValues) -> Unit,
 ) {
     Scaffold(
+        // Announced by TalkBack when the screen changes.
+        modifier = Modifier.semantics { paneTitle = title },
         topBar = {
             TopAppBar(
-                title = { Text(title) },
+                title = { Text(title, modifier = Modifier.semantics { heading() }) },
                 navigationIcon = {
                     if (onBack != null) {
                         IconButton(onClick = onBack) {

@@ -19,13 +19,16 @@ internal data class ProtectionSettings(
 )
 
 /**
- * Everything the screening service reads lives in device-protected storage, like the
- * original blocking switch, so the same file keeps working whatever state the phone is in.
+ * The blocking switch and the pause stay in the device-protected file of version 1.0.
+ * The call journal, the allowed numbers and the screen flags are personal data: they live
+ * in credential-protected storage, which the screening service can read because Android
+ * only binds it once the phone has been unlocked.
  * One instance per process: the app, the screening service and the tile share its flows.
  */
 internal class ScamStopStore private constructor(private val appContext: Context) {
-    private val prefs: SharedPreferences = appContext.createDeviceProtectedStorageContext()
-        .getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+    private val protection: SharedPreferences = appContext.createDeviceProtectedStorageContext()
+        .getSharedPreferences(PROTECTION_PREFERENCES, Context.MODE_PRIVATE)
+    private val prefs: SharedPreferences = appContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
 
     private val _settings = MutableStateFlow(readSettings())
     val settings: StateFlow<ProtectionSettings> = _settings.asStateFlow()
@@ -36,17 +39,17 @@ internal class ScamStopStore private constructor(private val appContext: Context
     private val _allowlist = MutableStateFlow(RecordCodec.decodeAllowlist(prefs.getString(ALLOWLIST_KEY, null)))
     val allowlist: StateFlow<List<AllowedNumber>> = _allowlist.asStateFlow()
 
-    fun setEnabled(enabled: Boolean) = editSettings(protectionChanged = true) {
+    fun setEnabled(enabled: Boolean) = editProtection {
         putBoolean(ENABLED_KEY, enabled)
         putLong(PAUSED_UNTIL_KEY, 0L)
     }
 
-    fun pauseUntil(timeMillis: Long) = editSettings(protectionChanged = true) {
+    fun pauseUntil(timeMillis: Long) = editProtection {
         putBoolean(ENABLED_KEY, true)
         putLong(PAUSED_UNTIL_KEY, timeMillis)
     }
 
-    fun resume() = editSettings(protectionChanged = true) { putLong(PAUSED_UNTIL_KEY, 0L) }
+    fun resume() = editProtection { putLong(PAUSED_UNTIL_KEY, 0L) }
 
     fun setNotify(notify: Boolean) = editSettings {
         putBoolean(NOTIFY_KEY, notify)
@@ -77,8 +80,8 @@ internal class ScamStopStore private constructor(private val appContext: Context
     fun disallow(number: String) = writeAllowlist(_allowlist.value.without(number))
 
     private fun readSettings() = ProtectionSettings(
-        isEnabled = prefs.getBoolean(ENABLED_KEY, true),
-        pausedUntil = prefs.getLong(PAUSED_UNTIL_KEY, 0L),
+        isEnabled = protection.getBoolean(ENABLED_KEY, true),
+        pausedUntil = protection.getLong(PAUSED_UNTIL_KEY, 0L),
         notify = prefs.getBoolean(NOTIFY_KEY, true),
         notificationsDecided = prefs.getBoolean(NOTIFICATIONS_DECIDED_KEY, false),
         notificationPermissionAsked = prefs.getBoolean(NOTIFICATION_ASKED_KEY, false),
@@ -87,12 +90,17 @@ internal class ScamStopStore private constructor(private val appContext: Context
         tileAdded = prefs.getBoolean(TILE_ADDED_KEY, false),
     )
 
-    private fun editSettings(protectionChanged: Boolean = false, block: SharedPreferences.Editor.() -> Unit) {
+    private fun editSettings(block: SharedPreferences.Editor.() -> Unit) = synchronized(this) {
+        prefs.edit(action = block)
+        _settings.value = readSettings()
+    }
+
+    private fun editProtection(block: SharedPreferences.Editor.() -> Unit) {
         synchronized(this) {
-            prefs.edit(action = block)
+            protection.edit(action = block)
             _settings.value = readSettings()
         }
-        if (protectionChanged) ProtectionTileService.requestUpdate(appContext)
+        ProtectionTileService.requestUpdate(appContext)
     }
 
     private fun writeCalls(calls: List<RejectedCall>) = synchronized(this) {
@@ -107,7 +115,8 @@ internal class ScamStopStore private constructor(private val appContext: Context
 
     companion object {
         // Same file and key as the original BlockingPreference, so an update keeps the switch.
-        private const val PREFERENCES_NAME = "blocking_policy"
+        private const val PROTECTION_PREFERENCES = "blocking_policy"
+        private const val PREFERENCES_NAME = "scam_stop"
         private const val ENABLED_KEY = "enabled"
         private const val PAUSED_UNTIL_KEY = "paused_until"
         private const val NOTIFY_KEY = "notify"

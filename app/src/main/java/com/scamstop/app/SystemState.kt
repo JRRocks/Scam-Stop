@@ -29,9 +29,12 @@ internal fun Context.hasNotificationPermission(): Boolean =
     Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
         checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
-/** Android lets the app post: permission granted and notifications not switched off in settings. */
+internal fun Context.appNotificationsEnabled(): Boolean =
+    getSystemService(NotificationManager::class.java).areNotificationsEnabled()
+
+/** Android delivers them: permission granted, app and "Appels rejetés" category not switched off. */
 internal fun Context.canPostNotifications(): Boolean =
-    hasNotificationPermission() && getSystemService(NotificationManager::class.java).areNotificationsEnabled()
+    hasNotificationPermission() && appNotificationsEnabled() && !RejectedCallNotifications.isChannelBlocked(this)
 
 internal fun Context.formatPhoneNumber(number: String?): String {
     if (number.isNullOrBlank()) return getString(R.string.unknown_number)

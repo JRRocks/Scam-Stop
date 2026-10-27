@@ -11,6 +11,7 @@ import android.provider.ContactsContract
 import android.provider.Settings
 import android.telecom.TelecomManager
 import com.scamstop.app.R
+import com.scamstop.app.RejectedCallNotifications
 import com.scamstop.app.VoiceGreeting
 
 // None of these need a permission: the dialer, messaging and contacts apps do the work,
@@ -56,6 +57,12 @@ internal fun Context.openBlockedNumbers(): Boolean =
 
 internal fun Context.openAppNotificationSettings() = tryStart(
     Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName),
+)
+
+internal fun Context.openRejectedCallsChannelSettings() = tryStart(
+    Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+        .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+        .putExtra(Settings.EXTRA_CHANNEL_ID, RejectedCallNotifications.CHANNEL_ID),
 )
 
 internal tailrec fun Context.findActivity(): Activity? = when (this) {

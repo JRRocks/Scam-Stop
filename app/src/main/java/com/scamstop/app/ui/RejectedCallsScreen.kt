@@ -2,14 +2,15 @@ package com.scamstop.app.ui
 
 import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,9 +36,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.scamstop.app.AllowedNumber
+import com.scamstop.app.PhoneNumbers
 import com.scamstop.app.R
 import com.scamstop.app.RejectedCall
 import com.scamstop.app.ScamStopStore
@@ -45,6 +50,7 @@ import com.scamstop.app.formatTime
 import com.scamstop.app.groupByDay
 import com.scamstop.app.matching
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -56,8 +62,10 @@ internal fun RejectedCallsScreen(store: ScamStopStore, onBack: () -> Unit) {
     val snackbar = remember { SnackbarHostState() }
     val calls by store.calls.collectAsStateWithLifecycle()
     val allowlist by store.allowlist.collectAsStateWithLifecycle()
-    var selected by remember { mutableStateOf<RejectedCall?>(null) }
-    var allowTarget by remember { mutableStateOf<String?>(null) }
+    // Saved as plain values so the sheet and the dialog survive a rotation.
+    var selectedTime by rememberSaveable { mutableStateOf<Long?>(null) }
+    val selected = selectedTime?.let { time -> calls.firstOrNull { it.timeMillis == time } }
+    var allowTarget by rememberSaveable { mutableStateOf<String?>(null) }
     var menuOpen by remember { mutableStateOf(false) }
 
     val clearedMessage = stringResource(R.string.calls_cleared)
@@ -121,8 +129,8 @@ internal fun RejectedCallsScreen(store: ScamStopStore, onBack: () -> Unit) {
                                 },
                             )
                         }
-                        items(dayCalls, key = { "${it.timeMillis}-${it.number}-${it.hashCode()}" }) { call ->
-                            CallRow(call, allowlist.matching(call.number), onClick = { selected = call })
+                        itemsIndexed(dayCalls, key = { index, call -> "$day-$index-${call.timeMillis}" }) { _, call ->
+                            CallRow(call, allowlist.matching(call.number), onClick = { selectedTime = call.timeMillis })
                         }
                     }
                 }
@@ -134,7 +142,7 @@ internal fun RejectedCallsScreen(store: ScamStopStore, onBack: () -> Unit) {
         CallActionsSheet(
             call = call,
             allowed = allowlist.matching(call.number),
-            onDismiss = { selected = null },
+            onDismiss = { selectedTime = null },
             onUnavailable = showUnavailable,
             onAllow = { allowTarget = it },
             onDisallow = { number ->
@@ -169,19 +177,43 @@ internal fun RejectedCallsScreen(store: ScamStopStore, onBack: () -> Unit) {
 @Composable
 private fun CallRow(call: RejectedCall, allowed: AllowedNumber?, onClick: () -> Unit) {
     val context = LocalContext.current
-    val time = context.formatTime(call.timeMillis)
     SettingRow(
         title = context.formatPhoneNumber(call.number),
         supporting = when {
-            allowed == null -> stringResource(R.string.call_rejected_at, time)
-            allowed.label.isBlank() -> stringResource(R.string.call_allowed_since_unnamed)
-            else -> stringResource(R.string.call_allowed_since, allowed.label)
+            allowed == null -> stringResource(R.string.call_rejected)
+            allowed.label.isBlank() -> stringResource(R.string.call_now_allowed_unnamed)
+            else -> stringResource(R.string.call_now_allowed, allowed.label)
         },
         icon = if (allowed == null) R.drawable.ic_ms_phone_disabled else R.drawable.ic_ms_how_to_reg,
-        onClickLabel = stringResource(R.string.more_options),
+        onClickLabel = stringResource(R.string.call_actions),
         onClick = onClick,
-        trailing = { Text(time, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+        trailing = {
+            Text(
+                context.formatTime(call.timeMillis),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
     )
+}
+
+/** "Rejeté aujourd'hui à 11:46", "Rejeté hier à 11:46" or "Rejeté le 25 oct. à 11:46". */
+@Composable
+private fun rejectedWhen(timeMillis: Long): String {
+    val context = LocalContext.current
+    val zone = ZoneId.systemDefault()
+    val day = Instant.ofEpochMilli(timeMillis).atZone(zone).toLocalDate()
+    val today = LocalDate.now(zone)
+    val time = context.formatTime(timeMillis)
+    return when (day) {
+        today -> stringResource(R.string.call_rejected_today, time)
+        today.minusDays(1) -> stringResource(R.string.call_rejected_yesterday, time)
+        else -> stringResource(
+            R.string.call_rejected_on,
+            DateUtils.formatDateTime(context, timeMillis, DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_ABBREV_MONTH),
+            time,
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -204,49 +236,51 @@ private fun CallActionsSheet(
         }
     }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
-        Text(
-            context.formatPhoneNumber(call.number),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(horizontal = 16.dp),
-        )
-        Text(
-            stringResource(R.string.call_rejected_at, context.formatTime(call.timeMillis)),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 8.dp),
-        )
-        val number = call.number
-        if (number.isNullOrBlank()) {
+        Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
             Text(
-                stringResource(R.string.hidden_number_note),
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(16.dp),
+                context.formatPhoneNumber(call.number),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(horizontal = 16.dp).semantics { heading() },
             )
-        } else {
-            SettingRow(stringResource(R.string.action_call), icon = R.drawable.ic_ms_call, onClick = {
-                close { if (!context.dial(number)) onUnavailable() }
-            })
-            SettingRow(stringResource(R.string.action_sms), icon = R.drawable.ic_ms_sms, onClick = {
-                close { if (!context.sendSms(number)) onUnavailable() }
-            })
-            SettingRow(stringResource(R.string.action_add_contact), icon = R.drawable.ic_ms_person_add, onClick = {
-                close { if (!context.addToContacts(number)) onUnavailable() }
-            })
-            if (allowed == null) {
-                SettingRow(
-                    stringResource(R.string.action_allow),
-                    supporting = stringResource(R.string.action_allow_text),
-                    icon = R.drawable.ic_ms_how_to_reg,
-                    onClick = { close { onAllow(number) } },
+            Text(
+                rejectedWhen(call.timeMillis),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 8.dp),
+            )
+            val number = call.number
+            // A withheld number, or a handle without digits (a SIP address): nothing to dial or allow.
+            if (number == null || !PhoneNumbers.isDialable(number)) {
+                Text(
+                    stringResource(R.string.hidden_number_note),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(16.dp),
                 )
             } else {
-                SettingRow(
-                    stringResource(R.string.action_disallow),
-                    icon = R.drawable.ic_ms_person_remove,
-                    onClick = { close { onDisallow(number) } },
-                )
+                SettingRow(stringResource(R.string.action_call), icon = R.drawable.ic_ms_call, onClick = {
+                    close { if (!context.dial(number)) onUnavailable() }
+                })
+                SettingRow(stringResource(R.string.action_sms), icon = R.drawable.ic_ms_sms, onClick = {
+                    close { if (!context.sendSms(number)) onUnavailable() }
+                })
+                SettingRow(stringResource(R.string.action_add_contact), icon = R.drawable.ic_ms_person_add, onClick = {
+                    close { if (!context.addToContacts(number)) onUnavailable() }
+                })
+                if (allowed == null) {
+                    SettingRow(
+                        stringResource(R.string.action_allow),
+                        supporting = stringResource(R.string.action_allow_text),
+                        icon = R.drawable.ic_ms_how_to_reg,
+                        onClick = { close { onAllow(number) } },
+                    )
+                } else {
+                    SettingRow(
+                        stringResource(R.string.action_disallow),
+                        icon = R.drawable.ic_ms_person_remove,
+                        onClick = { close { onDisallow(number) } },
+                    )
+                }
             }
         }
-        Spacer(Modifier.size(16.dp))
     }
 }

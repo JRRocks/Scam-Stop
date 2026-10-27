@@ -1,10 +1,13 @@
 package com.scamstop.app.ui
 
+import android.content.Intent
+import android.speech.tts.TextToSpeech
 import android.text.format.DateUtils
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -36,6 +39,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -45,51 +49,40 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.scamstop.app.GreetingExport
-import com.scamstop.app.GreetingPrefs
 import com.scamstop.app.R
 import com.scamstop.app.ScamStopStore
 import com.scamstop.app.VoiceGreeting
 import com.scamstop.app.formatTime
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @Composable
-internal fun GreetingScreen(store: ScamStopStore, onBack: () -> Unit) {
+internal fun GreetingScreen(store: ScamStopStore, onBack: () -> Unit, model: GreetingViewModel = viewModel()) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
-    val prefs = remember { GreetingPrefs(context) }
-    val voice = remember { VoiceGreeting(context.applicationContext) }
-    DisposableEffect(voice) { onDispose { voice.shutdown() } }
+    val voice = model.voice
     val engine by voice.engine.collectAsStateWithLifecycle()
     val speaking by voice.speaking.collectAsStateWithLifecycle()
     val exporting by voice.exporting.collectAsStateWithLifecycle()
+    val frenchMissing by voice.frenchMissing.collectAsStateWithLifecycle()
+    val export by model.export.collectAsStateWithLifecycle()
+    val exportFailed by model.exportFailed.collectAsStateWithLifecycle()
     val settings by store.settings.collectAsStateWithLifecycle()
 
     val defaultText = stringResource(R.string.default_greeting)
-    var text by rememberSaveable { mutableStateOf(prefs.text?.takeIf { it.isNotBlank() } ?: defaultText) }
-    var export by remember { mutableStateOf(prefs.export) }
-    var exportFailed by rememberSaveable { mutableStateOf(false) }
+    var text by rememberSaveable { mutableStateOf(model.savedText?.takeIf { it.isNotBlank() } ?: defaultText) }
     val greeting = text.trim().ifEmpty { defaultText }
 
     // Keep what is typed, without writing on every keystroke.
     val latestText by rememberUpdatedState(text)
     LaunchedEffect(text) {
         delay(400)
-        prefs.text = text
+        model.savedText = text
     }
-    DisposableEffect(Unit) { onDispose { prefs.text = latestText } }
-
-    LaunchedEffect(Unit) {
-        val saved = export ?: return@LaunchedEffect
-        if (!withContext(Dispatchers.IO) { VoiceGreeting.exists(context, saved.uri) }) {
-            prefs.saveExport(null)
-            export = null
-        }
-    }
+    DisposableEffect(Unit) { onDispose { model.savedText = latestText } }
 
     val ready = engine == VoiceGreeting.Engine.READY
     val unavailableMessage = stringResource(R.string.action_unavailable)
@@ -113,55 +106,44 @@ internal fun GreetingScreen(store: ScamStopStore, onBack: () -> Unit) {
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth(),
             )
 
-            when (engine) {
-                VoiceGreeting.Engine.STARTING -> StatusLine(stringResource(R.string.tts_starting))
-                VoiceGreeting.Engine.UNAVAILABLE ->
-                    StatusLine(stringResource(R.string.tts_unavailable), MaterialTheme.colorScheme.error)
-                VoiceGreeting.Engine.READY -> Unit
+            when {
+                engine == VoiceGreeting.Engine.STARTING -> StatusLine(stringResource(R.string.tts_starting))
+                engine == VoiceGreeting.Engine.UNAVAILABLE -> VoiceProblem(
+                    message = stringResource(R.string.tts_unavailable),
+                    action = stringResource(R.string.tts_settings),
+                    onAction = { if (!context.tryStart(Intent(TTS_SETTINGS))) showUnavailable() },
+                )
+                frenchMissing -> VoiceProblem(
+                    message = stringResource(R.string.tts_french_missing),
+                    action = stringResource(R.string.tts_install_voice),
+                    onAction = {
+                        val installed = context.tryStart(Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA)) ||
+                            context.tryStart(Intent(TTS_SETTINGS))
+                        if (!installed) showUnavailable()
+                    },
+                )
             }
 
-            Row(
+            FlowRow(
                 Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 FilledTonalButton(
                     onClick = { if (speaking) voice.stop() else voice.speak(greeting) },
                     enabled = ready && !exporting,
                     contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
                 ) {
-                    Icon(
-                        painterResource(if (speaking) R.drawable.ic_ms_stop else R.drawable.ic_ms_play_arrow),
-                        contentDescription = null,
-                        modifier = Modifier.size(ButtonDefaults.IconSize),
-                    )
-                    Text(
-                        stringResource(if (speaking) R.string.stop_greeting else R.string.speak_greeting),
-                        modifier = Modifier.padding(start = ButtonDefaults.IconSpacing),
-                    )
+                    ButtonIcon(if (speaking) R.drawable.ic_ms_stop else R.drawable.ic_ms_play_arrow)
+                    Text(stringResource(if (speaking) R.string.stop_greeting else R.string.speak_greeting))
                 }
                 OutlinedButton(
-                    onClick = {
-                        exportFailed = false
-                        val exportedText = greeting
-                        voice.export(exportedText, export?.uri) { uri ->
-                            if (uri == null) {
-                                exportFailed = true
-                            } else {
-                                val saved = GreetingExport(uri, System.currentTimeMillis(), exportedText)
-                                prefs.saveExport(saved)
-                                export = saved
-                            }
-                        }
-                    },
+                    onClick = { model.createFile(greeting) },
                     enabled = ready && !exporting,
                     contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
                 ) {
-                    Icon(
-                        painterResource(R.drawable.ic_ms_download),
-                        contentDescription = null,
-                        modifier = Modifier.size(ButtonDefaults.IconSize),
-                    )
-                    Text(stringResource(R.string.save_greeting), modifier = Modifier.padding(start = ButtonDefaults.IconSpacing))
+                    ButtonIcon(R.drawable.ic_ms_download)
+                    Text(stringResource(R.string.save_greeting))
                 }
             }
 
@@ -219,8 +201,20 @@ internal fun GreetingScreen(store: ScamStopStore, onBack: () -> Unit) {
     }
 }
 
+/** Android's text-to-speech settings screen; not a public constant, but present on AOSP and OEM builds. */
+private const val TTS_SETTINGS = "com.android.settings.TTS_SETTINGS"
+
 @Composable
-private fun StatusLine(text: String, color: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant) {
+private fun ButtonIcon(icon: Int) {
+    Icon(
+        painterResource(icon),
+        contentDescription = null,
+        modifier = Modifier.padding(end = ButtonDefaults.IconSpacing).size(ButtonDefaults.IconSize),
+    )
+}
+
+@Composable
+private fun StatusLine(text: String, color: Color = MaterialTheme.colorScheme.onSurfaceVariant) {
     Text(
         text,
         style = MaterialTheme.typography.bodySmall,
@@ -229,6 +223,19 @@ private fun StatusLine(text: String, color: androidx.compose.ui.graphics.Color =
             .padding(horizontal = 16.dp, vertical = 4.dp)
             .semantics { liveRegion = LiveRegionMode.Polite },
     )
+}
+
+@Composable
+private fun VoiceProblem(message: String, action: String, onAction: () -> Unit) {
+    Column(Modifier.padding(start = 16.dp, end = 8.dp)) {
+        Text(
+            message,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.padding(end = 8.dp).semantics { liveRegion = LiveRegionMode.Polite },
+        )
+        TextButton(onClick = onAction) { Text(action) }
+    }
 }
 
 @Composable
@@ -259,7 +266,7 @@ private fun ExportedFile(export: GreetingExport, outdated: Boolean, onShare: () 
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Column(Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }) {
-                    Text(stringResource(R.string.greeting_file_name), style = MaterialTheme.typography.bodyLarge)
+                    Text(export.name, style = MaterialTheme.typography.bodyLarge)
                     Text(
                         if (outdated) stringResource(R.string.greeting_file_outdated) else savedAt,
                         style = MaterialTheme.typography.bodySmall,
@@ -267,14 +274,13 @@ private fun ExportedFile(export: GreetingExport, outdated: Boolean, onShare: () 
                     )
                 }
             }
-            Row(Modifier.padding(start = 28.dp, top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(
+                Modifier.padding(start = 36.dp, top = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 FilledTonalButton(onClick = onShare, contentPadding = ButtonDefaults.ButtonWithIconContentPadding) {
-                    Icon(
-                        painterResource(R.drawable.ic_ms_share),
-                        contentDescription = null,
-                        modifier = Modifier.size(ButtonDefaults.IconSize),
-                    )
-                    Text(stringResource(R.string.share), modifier = Modifier.padding(start = ButtonDefaults.IconSpacing))
+                    ButtonIcon(R.drawable.ic_ms_share)
+                    Text(stringResource(R.string.share))
                 }
                 TextButton(onClick = onOpen) { Text(stringResource(R.string.open)) }
             }

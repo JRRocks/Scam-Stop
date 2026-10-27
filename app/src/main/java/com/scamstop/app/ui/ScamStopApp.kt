@@ -12,6 +12,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -57,8 +58,9 @@ internal fun ScamStopApp(request: LaunchRequest?, onRequestHandled: () -> Unit) 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { system.refresh() }
     val navController = rememberNavController()
     var pauseSheetRequested by rememberSaveable { mutableStateOf(false) }
-    val back: () -> Unit = { navController.popBackStack() }
 
+    // dropUnlessResumed, created inside each destination, ignores a second tap while a
+    // transition runs: a double tap on Back would otherwise pop the home screen too.
     NavHost(navController, startDestination = Routes.HOME) {
         composable(Routes.HOME) {
             HomeScreen(
@@ -66,14 +68,14 @@ internal fun ScamStopApp(request: LaunchRequest?, onRequestHandled: () -> Unit) 
                 system = system,
                 pauseSheetRequested = pauseSheetRequested,
                 onPauseSheetRequestHandled = { pauseSheetRequested = false },
-                onOpenCalls = { navController.navigate(Routes.CALLS) },
-                onOpenAllowlist = { navController.navigate(Routes.ALLOWLIST) },
-                onOpenGreeting = { navController.navigate(Routes.GREETING) },
+                onOpenCalls = dropUnlessResumed { navController.navigate(Routes.CALLS) },
+                onOpenAllowlist = dropUnlessResumed { navController.navigate(Routes.ALLOWLIST) },
+                onOpenGreeting = dropUnlessResumed { navController.navigate(Routes.GREETING) },
             )
         }
-        composable(Routes.CALLS) { RejectedCallsScreen(store, onBack = back) }
-        composable(Routes.ALLOWLIST) { AllowlistScreen(store, onBack = back) }
-        composable(Routes.GREETING) { GreetingScreen(store, onBack = back) }
+        composable(Routes.CALLS) { RejectedCallsScreen(store, onBack = dropUnlessResumed { navController.popBackStack() }) }
+        composable(Routes.ALLOWLIST) { AllowlistScreen(store, onBack = dropUnlessResumed { navController.popBackStack() }) }
+        composable(Routes.GREETING) { GreetingScreen(store, onBack = dropUnlessResumed { navController.popBackStack() }) }
     }
 
     // After the NavHost so its graph is set before navigating.

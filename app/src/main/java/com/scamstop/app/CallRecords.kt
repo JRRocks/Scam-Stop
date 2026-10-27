@@ -20,13 +20,16 @@ internal object PhoneNumbers {
      * "06 12 34 56 78", "+33 6 12 34 56 78" and "0033612345678" share their last 9 digits.
      */
     fun significantDigits(raw: String): String {
-        val digits = raw.filter { it in '0'..'9' }
+        // "+33 (0)6 12 …": the bracketed trunk zero is never dialled from abroad.
+        val digits = raw.replace(TRUNK_ZERO, "").filter { it in '0'..'9' }
         val international = raw.trimStart().startsWith("+")
         val withoutPrefix = if (!international && digits.startsWith("00")) digits.drop(2) else digits
         return withoutPrefix.trimStart('0')
     }
 
     fun same(a: String, b: String): Boolean {
+        // Identical text always matches, even a handle without digits (a SIP address).
+        if (a.trim().equals(b.trim(), ignoreCase = true) && a.isNotBlank()) return true
         val x = significantDigits(a)
         val y = significantDigits(b)
         if (x.isEmpty() || y.isEmpty()) return false
@@ -35,16 +38,20 @@ internal object PhoneNumbers {
         return shorter.length >= MIN_SUFFIX_MATCH && longer.endsWith(shorter)
     }
 
-    fun isDialable(raw: String): Boolean = raw.count { it in '0'..'9' } >= 3
+    fun isDialable(raw: String): Boolean = significantDigits(raw).length >= 3
+
+    private val TRUNK_ZERO = Regex("\\(\\s*0\\s*\\)")
 }
 
 internal fun List<AllowedNumber>.matching(number: String?): AllowedNumber? =
     number?.let { n -> firstOrNull { PhoneNumbers.same(it.number, n) } }
 
-/** Adds the number, or renames it when an equivalent form is already allowed. */
+/** Adds the number, or replaces every equivalent form already allowed, keeping its place. */
 internal fun List<AllowedNumber>.withAllowed(entry: AllowedNumber): List<AllowedNumber> {
     val index = indexOfFirst { PhoneNumbers.same(it.number, entry.number) }
-    return if (index < 0) this + entry else toMutableList().also { it[index] = entry }
+    if (index < 0) return this + entry
+    val others = filterNot { PhoneNumbers.same(it.number, entry.number) }
+    return others.toMutableList().apply { add(index.coerceAtMost(size), entry) }
 }
 
 internal fun List<AllowedNumber>.without(number: String): List<AllowedNumber> =
@@ -71,7 +78,7 @@ internal object RecordCodec {
 
     fun decodeAllowlist(stored: String?): List<AllowedNumber> = records(stored).mapNotNull { (first, second) ->
         if (first.isBlank()) null else AllowedNumber(first, second)
-    }
+    }.distinctBy { it.number }
 
     private fun records(stored: String?): List<Pair<String, String>> =
         stored.orEmpty().lineSequence().mapNotNull { line ->
