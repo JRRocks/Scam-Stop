@@ -1,7 +1,9 @@
 package com.scamstop.app
 
+import android.os.Build
 import android.telecom.Call
 import android.telecom.CallScreeningService
+import android.telecom.Connection
 
 class NonContactCallScreeningService : CallScreeningService() {
     override fun onScreenCall(callDetails: Call.Details) {
@@ -35,6 +37,10 @@ class NonContactCallScreeningService : CallScreeningService() {
         if (block) {
             store.addRejectedCall(RejectedCall(number, System.currentTimeMillis()))
             if (settings.notify) RejectedCallNotifications.show(this, number)
+            // A number the network flags as spoofed belongs to someone else: never text it.
+            val spoofed = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+                callDetails.callerNumberVerificationStatus == Connection.VERIFICATION_STATUS_FAILED
+            if (settings.smsReply && !spoofed) SmsReply.sendIfAllowed(this, number)
         }
     }
 }

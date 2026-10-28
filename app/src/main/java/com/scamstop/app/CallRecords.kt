@@ -80,6 +80,13 @@ internal object RecordCodec {
         if (first.isBlank()) null else AllowedNumber(first, second)
     }.distinctBy { it.number }
 
+    fun encodeSmsReplies(replies: Map<String, Long>): String =
+        replies.entries.joinToString("\n") { "${it.value}\t${clean(it.key)}" }
+
+    fun decodeSmsReplies(stored: String?): Map<String, Long> = records(stored).mapNotNull { (first, second) ->
+        first.toLongOrNull()?.let { second to it }
+    }.toMap()
+
     private fun records(stored: String?): List<Pair<String, String>> =
         stored.orEmpty().lineSequence().mapNotNull { line ->
             val tab = line.indexOf('\t')

@@ -59,6 +59,11 @@ internal fun Context.openAppNotificationSettings() = tryStart(
     Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName),
 )
 
+/** App info, where a refused permission (or a "restricted setting") can still be allowed. */
+internal fun Context.openAppSettings() = tryStart(
+    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null)),
+)
+
 internal fun Context.openRejectedCallsChannelSettings() = tryStart(
     Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
         .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)

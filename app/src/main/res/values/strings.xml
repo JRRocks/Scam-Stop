@@ -50,6 +50,10 @@
     <string name="greeting_row_todo">À créer, puis à installer sur votre messagerie</string>
     <string name="greeting_row_saved">Fichier .wav prêt, à installer sur votre messagerie</string>
     <string name="greeting_row_installed">Installée sur votre messagerie</string>
+    <string name="sms_reply_title">Répondre par SMS</string>
+    <string name="sms_reply_text">Envoie le texte de l’annonce, une seule fois par numéro. Mobiles 06 et 07 uniquement, jamais à l’étranger, 10 par jour au plus.</string>
+    <string name="sms_reply_blocked">Envoi de SMS non autorisé dans Android : touchez pour l’autoriser</string>
+    <string name="sms_refused">Android refuse l’envoi de SMS. Autorisez-le dans Infos de l’appli ; s’il est indiqué « paramètre restreint », passez d’abord par ⋮ › Autoriser les paramètres restreints.</string>
     <string name="section_notifications">Notifications</string>
     <string name="notify_title">Me prévenir à chaque appel rejeté</string>
     <string name="notify_text_on">Une notification par appel, avec le numéro</string>

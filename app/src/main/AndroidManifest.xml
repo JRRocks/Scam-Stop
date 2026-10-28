@@ -3,6 +3,12 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Optional reply to rejected callers; asked only when the user turns it on. -->
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <!-- SEND_SMS would otherwise make telephony a requirement for installing the app. -->
+    <uses-feature
+        android:name="android.hardware.telephony"
+        android:required="false" />
 
     <!-- Package visibility: without it TextToSpeech cannot bind to the engine on API 30+. -->
     <queries>

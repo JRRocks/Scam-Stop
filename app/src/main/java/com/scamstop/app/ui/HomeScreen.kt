@@ -138,6 +138,7 @@ internal fun HomeScreen(
         }
     }
     val enableNotifications = rememberNotificationToggle(store, system, settings.notificationPermissionAsked, snackbar)
+    val enableSmsReply = rememberSmsReplyToggle(store, system, snackbar)
 
     var showPauseSheet by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(pauseSheetRequested) {
@@ -259,6 +260,16 @@ internal fun HomeScreen(
                 onClick = onOpenGreeting,
                 trailing = { ChevronIcon() },
             )
+            RowDivider()
+            SwitchRow(
+                title = stringResource(R.string.sms_reply_title),
+                supporting = stringResource(
+                    if (settings.smsReply && !system.smsPermission) R.string.sms_reply_blocked else R.string.sms_reply_text,
+                ),
+                icon = R.drawable.ic_ms_sms,
+                checked = settings.smsReply && system.smsPermission,
+                onCheckedChange = enableSmsReply,
+            )
 
             SectionHeader(stringResource(R.string.section_notifications))
             val notifyChecked = settings.notify && system.notificationsAllowed
@@ -347,6 +358,40 @@ private fun rememberNotificationToggle(
                 !context.appNotificationsEnabled() -> context.openAppNotificationSettings()
                 RejectedCallNotifications.isChannelBlocked(context) -> context.openRejectedCallsChannelSettings()
             }
+        }
+    }
+}
+
+/**
+ * Turning SMS replies on asks Android for the permission. Once it is refused for good, or
+ * held back as a "restricted setting" for an app installed outside the Play Store, only
+ * the app info screen can allow it.
+ */
+@Composable
+private fun rememberSmsReplyToggle(store: ScamStopStore, system: SystemState, snackbar: SnackbarHostState): (Boolean) -> Unit {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val refused = stringResource(R.string.sms_refused)
+    val openSettings = stringResource(R.string.open_settings)
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        system.refresh()
+        if (granted) {
+            store.setSmsReply(true)
+        } else {
+            scope.launch {
+                if (snackbar.showSnackbar(refused, openSettings, duration = SnackbarDuration.Long) ==
+                    SnackbarResult.ActionPerformed
+                ) {
+                    context.openAppSettings()
+                }
+            }
+        }
+    }
+    return { enable ->
+        when {
+            !enable -> store.setSmsReply(false)
+            system.smsPermission -> store.setSmsReply(true)
+            else -> launcher.launch(Manifest.permission.SEND_SMS)
         }
     }
 }

@@ -16,6 +16,7 @@ internal data class ProtectionSettings(
     val greetingInstalled: Boolean,
     val setupHidden: Boolean,
     val tileAdded: Boolean,
+    val smsReply: Boolean,
 )
 
 /**
@@ -64,6 +65,20 @@ internal class ScamStopStore private constructor(private val appContext: Context
 
     fun setTileAdded(added: Boolean) = editSettings { putBoolean(TILE_ADDED_KEY, added) }
 
+    fun setSmsReply(enabled: Boolean) = editSettings { putBoolean(SMS_REPLY_KEY, enabled) }
+
+    /**
+     * Marks the number as texted when a reply is allowed, before it is sent: two calls in
+     * a row from the same number cannot both get one.
+     */
+    fun claimSmsReply(number: String, roamingAbroad: Boolean, now: Long): Boolean = synchronized(this) {
+        val key = frenchMobileKey(number) ?: return false
+        val sent = RecordCodec.decodeSmsReplies(prefs.getString(SMS_REPLIES_KEY, null))
+        if (!canReplyBySms(key, roamingAbroad, sent, now)) return false
+        prefs.edit { putString(SMS_REPLIES_KEY, RecordCodec.encodeSmsReplies(sent + (key to now))) }
+        true
+    }
+
     fun addRejectedCall(call: RejectedCall) = writeCalls(_calls.value.withNewCall(call))
 
     /** Returns what was cleared, so the screen can offer to undo. */
@@ -88,6 +103,7 @@ internal class ScamStopStore private constructor(private val appContext: Context
         greetingInstalled = prefs.getBoolean(GREETING_INSTALLED_KEY, false),
         setupHidden = prefs.getBoolean(SETUP_HIDDEN_KEY, false),
         tileAdded = prefs.getBoolean(TILE_ADDED_KEY, false),
+        smsReply = prefs.getBoolean(SMS_REPLY_KEY, false),
     )
 
     private fun editSettings(block: SharedPreferences.Editor.() -> Unit) = synchronized(this) {
@@ -125,6 +141,8 @@ internal class ScamStopStore private constructor(private val appContext: Context
         private const val GREETING_INSTALLED_KEY = "greeting_installed"
         private const val SETUP_HIDDEN_KEY = "setup_hidden"
         private const val TILE_ADDED_KEY = "tile_added"
+        private const val SMS_REPLY_KEY = "sms_reply"
+        private const val SMS_REPLIES_KEY = "sms_replies"
         private const val CALLS_KEY = "rejected_calls"
         private const val ALLOWLIST_KEY = "allowlist"
 

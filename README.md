@@ -19,6 +19,13 @@ contacts**. Les SMS ne sont jamais touchés. Hors-ligne, aucune donnée collect�
 - **Numéros autorisés** : des numéros qui sonnent normalement sans être dans vos
   contacts (« Livreure », un artisan…). Les formes `06…`, `+33 6…` et `0033 6…` d'un
   même numéro sont reconnues.
+- **Répondre par SMS** (désactivé par défaut) : l'appelant rejeté reçoit le texte de
+  l'annonce vocale par SMS. Garde-fous contre les frais et les rafales : une seule fois
+  par numéro, seulement vers les mobiles français (06, 07), rien en itinérance à
+  l'étranger, 10 SMS par 24 h au plus, et jamais vers un numéro que le réseau signale
+  comme usurpé. Un SMS parti ne peut pas être annulé : ces vérifications ont lieu avant.
+  Installée hors Play Store, l'app peut voir la permission SMS bloquée en « paramètre
+  restreint » : Infos de l'appli > ⋮ > Autoriser les paramètres restreints.
 - Le journal et les numéros autorisés restent sur le téléphone, dans le stockage
   chiffré par votre code de déverrouillage : ni envoyés, ni sauvegardés dans le cloud.
 
@@ -73,7 +80,8 @@ Dérivé de [Non-Contact Call Blocker](https://github.com/franciscogouveia/andro
 Modifications Scam Stop : traduction française, rejet de l'appel (au lieu d'un simple
 blocage) pour un renvoi immédiat vers la messagerie, générateur d'annonce vocale,
 interface Compose, pause minutée et tuile, journal des appels rejetés, numéros
-autorisés. Ces modifications sont distribuées sous la même licence.
+autorisés, réponse SMS automatique. Ces modifications sont distribuées sous la même
+licence.
 
 Icônes : [Material Symbols](https://github.com/google/material-design-icons) de Google,
 licence Apache 2.0.

@@ -21,6 +21,7 @@ import com.scamstop.app.ScamStopStore
 import com.scamstop.app.canPostNotifications
 import com.scamstop.app.currentRoleState
 import com.scamstop.app.hasNotificationPermission
+import com.scamstop.app.hasSmsPermission
 
 internal enum class LaunchRequest { REJECTED_CALLS, PAUSE }
 
@@ -40,11 +41,14 @@ internal class SystemState(private val context: Context) {
         private set
     var notificationsAllowed by mutableStateOf(context.canPostNotifications())
         private set
+    var smsPermission by mutableStateOf(context.hasSmsPermission())
+        private set
 
     fun refresh() {
         role = context.currentRoleState()
         notificationPermission = context.hasNotificationPermission()
         notificationsAllowed = context.canPostNotifications()
+        smsPermission = context.hasSmsPermission()
     }
 
     val roleHeld: Boolean get() = role == RoleState.ACTIVE

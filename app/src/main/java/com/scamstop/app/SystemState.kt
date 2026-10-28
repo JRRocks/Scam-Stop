@@ -25,6 +25,9 @@ internal fun Context.currentProtectionStatus(now: Long = System.currentTimeMilli
     return protectionStatus(currentRoleState(), settings.isEnabled, settings.pausedUntil, now)
 }
 
+internal fun Context.hasSmsPermission(): Boolean =
+    checkSelfPermission(Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED
+
 internal fun Context.hasNotificationPermission(): Boolean =
     Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
         checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
