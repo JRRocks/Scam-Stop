@@ -29,7 +29,7 @@ un tag `v<version>` le publie dans Releases.
    `G:\My Drive\2 - Jean\Claude Code\APK release\ScamStop.<versionName>.apk`.
    Ce dossier est commun à tous les projets. Jamais d'APK dans le dossier miroir.
 4. **Miroir Drive** (sens unique local → Drive) :
-   robocopy "C:\Users\Taiepii\Desktop\Claude Code\Scam Stop" "G:\My Drive\2 - Jean\Claude Code\Scam Stop" /MIR /XD .git .gradle .kotlin build .idea node_modules __pycache__ .pytest_cache .venv venv /XF .env local.properties keystore.properties *.apk /R:1 /W:1
+   robocopy "C:\Users\<utilisateur>\Desktop\Claude Code\Scam Stop" "G:\My Drive\2 - Jean\Claude Code\Scam Stop" /MIR /XD .git .gradle .kotlin build .idea node_modules __pycache__ .pytest_cache .venv venv /XF .env local.properties keystore.properties *.apk /R:1 /W:1
    Les codes de sortie 0 à 7 veulent dire succès. `/MIR` supprime côté Drive : vérifier le chemin de destination.
    La racine peut être `My Drive` ou `Mon Drive`.
 5. **Message final** : indiquer la version déposée, le chemin de l'APK et le résultat du resync.
