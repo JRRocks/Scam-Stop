@@ -6,7 +6,7 @@ Ce fichier se supprime quand les deux chantiers sont livrés. Les décisions son
 
 | Tâche | Ce que l'utilisateur constate | État |
 |---|---|---|
-| A1. Aperçu avant et après des écrans et des textes touchés | Il a répondu « oui » à une variante | session demandée |
+| A1. Aperçu avant et après des écrans et des textes touchés | Il a répondu « oui » à une variante | en cours |
 | A2. Numéros appelés (D2) | « J'appelle un numéro hors contacts, il me rappelle : ça sonne » | à faire |
 | A3. Deuxième appel (D3) | « Un inconnu appelle : rejeté. Il rappelle dans les 5 minutes : ça sonne. Plus tard : rejeté » | à faire |
 
@@ -14,7 +14,7 @@ Ce fichier se supprime quand les deux chantiers sont livrés. Les décisions son
 
 | Tâche | Ce que l'utilisateur constate | État |
 |---|---|---|
-| B1. Voix à écouter, telles quelles et « entendues au téléphone » | Il a choisi une voix | session demandée |
+| B1. Voix à écouter, telles quelles et « entendues au téléphone » | Il a choisi une voix | en cours |
 | B2. Voix retenue dans l'appli | « Le bouton Écouter fait entendre une voix qu'on prend pour une personne » | à faire |
 | B3. Installation sur la messagerie Bouygues avec le moins de perte possible | « En appelant mon numéro depuis un autre téléphone, je comprends toute l'annonce » | à faire |
 
