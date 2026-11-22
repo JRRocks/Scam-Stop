@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vrais appelants Scam Stop</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one reading column; each question shows today's screen, then its lettered variants.
+   From 800px the screens sit two abreast. Phone mock-ups are drawn 1:1 (360px = 360dp). */
+:root {
+  --page: #eceef3;
+  --card: #ffffff;
+  --ink: #191c22;
+  --ink-soft: #4a4f5a;
+  --line: #d3d8e2;
+  --accent: #0b57d0;
+  --on-accent: #ffffff;
+  --accent-wash: #e2ebfb;
+  --note: #fff3d1;
+  --note-ink: #4a3600;
+  /* Scam Stop's own palette (ui/Theme.kt) */
+  --a-bg: #f9f9f9;
+  --a-on: #1b1b1b;
+  --a-on-var: #474747;
+  --a-outline: #777777;
+  --a-outline-var: #c7c7c7;
+  --a-primary: #0b57d0;
+  --a-on-primary: #ffffff;
+  --a-sc-low: #f3f3f3;
+  --a-sc-high: #e8e8e8;
+  --a-sc-highest: #e2e2e2;
+  --a-error: #b3261e;
+  --a-ok: #c4eed0;
+  --a-on-ok: #0f5223;
+  --a-ok-icon: #146c2e;
+  --a-scrim: rgba(0, 0, 0, 0.32);
+  --a-changed: rgba(11, 87, 208, 0.1);
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-app: Roboto, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #0c0e12;
+    --card: #171a20;
+    --ink: #e7e9ee;
+    --ink-soft: #a9afbb;
+    --line: #2c313b;
+    --accent: #a8c7fa;
+    --on-accent: #062e6f;
+    --accent-wash: #1b2a45;
+    --note: #3a2e0c;
+    --note-ink: #ffe29b;
+    --a-bg: #131313;
+    --a-on: #e2e2e2;
+    --a-on-var: #c6c6c6;
+    --a-outline: #919191;
+    --a-outline-var: #474747;
+    --a-primary: #a8c7fa;
+    --a-on-primary: #062e6f;
+    --a-sc-low: #1b1b1b;
+    --a-sc-high: #2a2a2a;
+    --a-sc-highest: #353535;
+    --a-error: #f2b8b5;
+    --a-ok: #0f5223;
+    --a-on-ok: #c4eed0;
+    --a-ok-icon: #6dd58c;
+    --a-scrim: rgba(0, 0, 0, 0.55);
+    --a-changed: rgba(168, 199, 250, 0.16);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #0c0e12;
+  --card: #171a20;
+  --ink: #e7e9ee;
+  --ink-soft: #a9afbb;
+  --line: #2c313b;
+  --accent: #a8c7fa;
+  --on-accent: #062e6f;
+  --accent-wash: #1b2a45;
+  --note: #3a2e0c;
+  --note-ink: #ffe29b;
+  --a-bg: #131313;
+  --a-on: #e2e2e2;
+  --a-on-var: #c6c6c6;
+  --a-outline: #919191;
+  --a-outline-var: #474747;
+  --a-primary: #a8c7fa;
+  --a-on-primary: #062e6f;
+  --a-sc-low: #1b1b1b;
+  --a-sc-high: #2a2a2a;
+  --a-sc-highest: #353535;
+  --a-error: #f2b8b5;
+  --a-ok: #0f5223;
+  --a-on-ok: #c4eed0;
+  --a-ok-icon: #6dd58c;
+  --a-scrim: rgba(0, 0, 0, 0.55);
+  --a-changed: rgba(168, 199, 250, 0.16);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font: 16px/1.5 var(--font);
+  -webkit-text-size-adjust: 100%;
+}
+.page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding-block: 24px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+h1, h2, h3, p, ul, ol { margin: 0; }
+h1 { font-size: 28px; line-height: 1.15; letter-spacing: -0.01em; text-wrap: balance; }
+h2 { font-size: 21px; line-height: 1.25; text-wrap: balance; }
+h3 { font-size: 17px; line-height: 1.3; text-wrap: balance; }
+ul, ol { padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); }
+.soft { color: var(--ink-soft); }
+.small { font-size: 14px; line-height: 1.45; }
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.stack-lg { display: flex; flex-direction: column; gap: 20px; }
+
+.top { display: flex; flex-direction: column; gap: 12px; }
+.answer {
+  background: var(--accent-wash);
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 15px;
+}
+.answer b { white-space: nowrap; }
+
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+.panel h3 { margin-bottom: 8px; }
+.cols { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+
+.q-head { display: flex; flex-direction: column; gap: 8px; }
+.q-num {
+  align-self: flex-start;
+  font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--on-accent); background: var(--accent);
+  padding: 3px 10px; border-radius: 999px;
+}
+.variant { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.v-title { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.v-letter { font-weight: 700; font-size: 19px; line-height: 1.2; }
+.v-name { flex-basis: 100%; font-size: 16px; font-weight: 600; line-height: 1.3; }
+.tag {
+  font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  border-radius: 6px; padding: 2px 8px; white-space: nowrap;
+}
+.tag.reco { background: var(--accent); color: var(--on-accent); }
+.tag.now { background: transparent; color: var(--ink-soft); border: 1px solid var(--line); }
+.why { font-size: 15px; }
+.foryou { font-size: 14.5px; line-height: 1.45; color: var(--ink-soft); }
+.foryou b { color: var(--ink); }
+.legend { font-size: 13px; color: var(--ink-soft); display: flex; align-items: center; gap: 8px; }
+.legend i { flex: none; width: 28px; height: 14px; border-radius: 4px; background: var(--a-changed); border: 1px solid var(--line); }
+.note { background: var(--note); color: var(--note-ink); border-radius: 12px; padding: 12px 14px; font-size: 14.5px; line-height: 1.45; }
+
+/* ---- Phone mock-up ---- */
+.phone {
+  width: 100%; max-width: 360px; margin: 0 auto;
+  background: var(--a-bg); color: var(--a-on);
+  border: 1px solid var(--a-outline-var); border-radius: 22px; overflow: hidden;
+  font-family: var(--font-app);
+  position: relative;
+}
+.phone.cut { border-radius: 14px; }
+.appbar { height: 64px; display: flex; align-items: center; gap: 4px; padding: 0 4px 0 16px; font-size: 22px; line-height: 28px; }
+.appbar.sub { padding-left: 4px; }
+.appbar .nav { width: 48px; height: 48px; display: grid; place-items: center; flex: none; }
+.appbar .ttl { flex: 1; min-width: 0; padding-left: 0; }
+.appbar.sub .ttl { padding-left: 4px; }
+.ic { width: 24px; height: 24px; flex: none; fill: var(--a-on-var); }
+.banner { margin: 8px 16px; padding: 16px; border-radius: 16px; background: var(--a-ok); color: var(--a-on-ok); display: flex; gap: 12px; }
+.banner .ic { fill: var(--a-on-ok); }
+.banner .b-t { font-size: 16px; line-height: 24px; font-weight: 500; letter-spacing: 0.15px; }
+.banner .b-x { font-size: 14px; line-height: 20px; letter-spacing: 0.25px; margin-top: 4px; }
+.sect { font-size: 14px; line-height: 20px; font-weight: 500; letter-spacing: 0.1px; color: var(--a-on-var); padding: 20px 16px 4px; }
+.caption { font-size: 12px; line-height: 16px; letter-spacing: 0.4px; color: var(--a-on-var); padding: 0 16px 6px; }
+.intro { font-size: 14px; line-height: 20px; letter-spacing: 0.25px; color: var(--a-on-var); padding: 8px 16px; }
+.row { display: flex; align-items: center; gap: 16px; padding: 8px 16px; min-height: 72px; }
+.row.one { min-height: 56px; }
+.row.tall { align-items: flex-start; padding-top: 12px; padding-bottom: 12px; min-height: 88px; }
+.row .tx { flex: 1; min-width: 0; }
+.row .hl { font-size: 14px; line-height: 20px; letter-spacing: 0.25px; color: var(--a-on); }
+.row .sp { font-size: 12px; line-height: 16px; letter-spacing: 0.4px; color: var(--a-on-var); }
+.row .time { font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0.5px; color: var(--a-on-var); flex: none; }
+.row.changed, .sect.changed, .caption.changed, .banner-wrap.changed, .appbar.changed, .s-why.changed { background: var(--a-changed); }
+.s-why.changed { border-radius: 6px; padding: 4px 6px; margin-left: -6px; margin-right: -6px; }
+.ic.ok { fill: var(--a-ok-icon); }
+.div { height: 1px; background: var(--a-outline-var); margin-left: 56px; }
+.sw { flex: none; width: 52px; height: 32px; border-radius: 16px; position: relative; background: var(--a-primary); }
+.sw::after { content: ""; position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; border-radius: 50%; background: var(--a-on-primary); }
+.sw.off { background: var(--a-sc-highest); box-shadow: inset 0 0 0 2px var(--a-outline); }
+.sw.off::after { top: 8px; right: auto; left: 8px; width: 16px; height: 16px; background: var(--a-outline); }
+.more { font-size: 12px; line-height: 16px; color: var(--a-on-var); text-align: center; padding: 14px 16px 16px; border-top: 1px dashed var(--a-outline-var); margin-top: 8px; }
+.fabwrap { display: flex; justify-content: flex-end; padding: 16px; }
+.fab { display: inline-flex; align-items: center; gap: 12px; height: 56px; padding: 0 20px 0 16px; border-radius: 16px; background: var(--a-primary); color: var(--a-on-primary); font-size: 14px; font-weight: 500; letter-spacing: 0.1px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25); }
+.fab .ic { fill: var(--a-on-primary); }
+.scrim { background: var(--a-scrim); padding-top: 28px; }
+.sheet { background: var(--a-sc-low); border-radius: 28px 28px 0 0; padding-bottom: 16px; }
+.sheet .handle { width: 32px; height: 4px; border-radius: 2px; background: var(--a-on-var); opacity: 0.4; margin: 0 auto; position: relative; top: 16px; }
+.sheet .s-top { padding: 36px 16px 8px; }
+.sheet .s-t { font-size: 16px; line-height: 24px; font-weight: 500; letter-spacing: 0.15px; }
+.sheet .s-x { font-size: 12px; line-height: 16px; letter-spacing: 0.4px; color: var(--a-on-var); margin-top: 2px; }
+.sheet .s-why { font-size: 14px; line-height: 20px; letter-spacing: 0.25px; color: var(--a-on); margin-top: 8px; }
+.dialogwrap { background: var(--a-scrim); padding: 28px 24px; }
+.dialog { background: var(--a-sc-high); border-radius: 28px; padding: 24px; }
+.dialog .d-t { font-size: 24px; line-height: 32px; }
+.dialog .d-n { font-size: 16px; line-height: 24px; font-weight: 500; letter-spacing: 0.15px; margin-top: 16px; }
+.dialog .d-x { font-size: 14px; line-height: 20px; letter-spacing: 0.25px; color: var(--a-on-var); margin-top: 12px; }
+.dialog .d-b { display: flex; justify-content: space-between; gap: 8px; margin-top: 24px; font-size: 14px; font-weight: 500; letter-spacing: 0.1px; }
+.dialog .d-b .danger { color: var(--a-error); }
+.dialog .d-b .go { color: var(--a-primary); }
+
+.say { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; font-size: 15.5px; line-height: 1.5; }
+.say mark { background: var(--accent-wash); color: inherit; border-radius: 4px; padding: 0 2px; }
+.cases { display: grid; gap: 10px; }
+.case { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.case .c-k { font-size: 12.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-soft); }
+.case .c-v { font-size: 14.5px; line-height: 1.45; margin-top: 4px; }
+footer { font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); border-top: 1px solid var(--line); padding-top: 16px; }
+
+@media (min-width: 800px) {
+  .cols.two { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  .cases { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  h1 { font-size: 34px; }
+}
+</style>
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="i-verified_user" viewBox="0 -960 960 960"><path d="m436-347 228-228-42-41-183 183-101-101-44 44 142 143Zm44 266q-140-35-230-162.5T160-523v-238l320-120 320 120v238q0 152-90 279.5T480-81Zm0-62q115-38 187.5-143.5T740-523v-196l-260-98-260 98v196q0 131 72.5 236.5T480-143Zm0-337Z"/></symbol><symbol id="i-pause" viewBox="0 -960 960 960"><path d="M525-200v-560h235v560H525Zm-325 0v-560h235v560H200Zm385-60h115v-440H585v440Zm-325 0h115v-440H260v440Zm0-440v440-440Zm325 0v440-440Z"/></symbol><symbol id="i-add" viewBox="0 -960 960 960"><path d="M450-450H200v-60h250v-250h60v250h250v60H510v250h-60v-250Z"/></symbol><symbol id="i-history" viewBox="0 -960 960 960"><path d="M477-120q-149 0-253-105.5T120-481h60q0 125 86 213t211 88q127 0 215-89t88-216q0-124-89-209.5T477-780q-68 0-127.5 31T246-667h105v60H142v-208h60v106q52-61 123.5-96T477-840q75 0 141 28t115.5 76.5Q783-687 811.5-622T840-482q0 75-28.5 141t-78 115Q684-177 618-148.5T477-120Zm128-197L451-469v-214h60v189l137 134-43 43Z"/></symbol><symbol id="i-how_to_reg" viewBox="0 -960 960 960"><path d="M80-160v-94q0-34 17-62.5t51-43.5q72-32 132-46t120-14q29 0 61.5 3.5T528-404l-49 49q-20-2-39.5-3.5T400-360q-58 0-105.5 10.5T172-306q-17 8-24.5 23t-7.5 29v34h319l60 60H80Zm545 16L484-285l42-42 99 99 213-213 42 42-255 255ZM292-524q-42-42-42-108t42-108q42-42 108-42t108 42q42 42 42 108t-42 108q-42 42-108 42t-108-42Zm167 304Zm5.5-347.5Q490-593 490-632t-25.5-64.5Q439-722 400-722t-64.5 25.5Q310-671 310-632t25.5 64.5Q361-542 400-542t64.5-25.5ZM400-632Z"/></symbol><symbol id="i-info" viewBox="0 -960 960 960"><path d="M453-280h60v-240h-60v240Zm50.5-323.2q9.5-9.2 9.5-22.8 0-14.45-9.48-24.22-9.48-9.78-23.5-9.78t-23.52 9.78Q447-640.45 447-626q0 13.6 9.48 22.8 9.48 9.2 23.5 9.2t23.52-9.2ZM480.27-80q-82.74 0-155.5-31.5Q252-143 197.5-197.5t-86-127.34Q80-397.68 80-480.5t31.5-155.66Q143-709 197.5-763t127.34-85.5Q397.68-880 480.5-880t155.66 31.5Q709-817 763-763t85.5 127Q880-563 880-480.27q0 82.74-31.5 155.5Q817-252 763-197.68q-54 54.31-127 86Q563-80 480.27-80Zm.23-60Q622-140 721-239.5t99-241Q820-622 721.19-721T480-820q-141 0-240.5 98.81T140-480q0 141 99.5 240.5t241 99.5Zm-.5-340Z"/></symbol><symbol id="i-open_in_new" viewBox="0 -960 960 960"><path d="M180-120q-24 0-42-18t-18-42v-600q0-24 18-42t42-18h279v60H180v600h600v-279h60v279q0 24-18 42t-42 18H180Zm202-219-42-43 398-398H519v-60h321v321h-60v-218L382-339Z"/></symbol><symbol id="i-voicemail" viewBox="0 -960 960 960"><path d="M251-320q-75 0-127.5-52.5T71-500q0-75 52.5-127.5T251-680q75 0 127.5 52.5T431-500q0 33.66-13.5 64.83T381-380h199q-23-25-36.5-55.5T530-500q0-75 52.5-127.5T710-680q75 0 128 52.5T891-500q0 75-52.79 127.5T710-320H251Zm0-60q50.4 0 85.2-35 34.8-35 34.8-85t-34.8-85q-34.8-35-85.2-35-50.4 0-85.2 35-34.8 35-34.8 85t34.8 85q34.8 35 85.2 35Zm459 0q50.4 0 85.2-35 34.8-35 34.8-85t-34.8-85q-34.8-35-85.2-35-50.4 0-85.2 35-34.8 35-34.8 85t34.8 85q34.8 35 85.2 35Z"/></symbol><symbol id="i-sms" viewBox="0 -960 960 960"><path d="M334.5-534.5Q346-546 346-563t-11.5-28.5Q323-603 306-603t-28.5 11.5Q266-580 266-563t11.5 28.5Q289-523 306-523t28.5-11.5Zm177 0Q523-546 523-563t-11.5-28.5Q500-603 483-603t-28.5 11.5Q443-580 443-563t11.5 28.5Q466-523 483-523t28.5-11.5Zm170 0Q693-546 693-563t-11.5-28.5Q670-603 653-603t-28.5 11.5Q613-580 613-563t11.5 28.5Q636-523 653-523t28.5-11.5ZM80-80v-740q0-24 18-42t42-18h680q24 0 42 18t18 42v520q0 24-18 42t-42 18H240L80-80Zm134-220h606v-520H140v600l74-80Zm-74 0v-520 520Z"/></symbol><symbol id="i-notifications" viewBox="0 -960 960 960"><path d="M160-200v-60h80v-304q0-84 49.5-150.5T420-798v-22q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v22q81 17 130.5 83.5T720-564v304h80v60H160Zm320-302Zm0 422q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM300-260h360v-304q0-75-52.5-127.5T480-744q-75 0-127.5 52.5T300-564v304Z"/></symbol><symbol id="i-chevron_right" viewBox="0 -960 960 960"><path d="M530-481 332-679l43-43 241 241-241 241-43-43 198-198Z"/></symbol><symbol id="i-arrow_back" viewBox="0 -960 960 960"><path d="m274-450 248 248-42 42-320-320 320-320 42 42-248 248h526v60H274Z"/></symbol><symbol id="i-more_vert" viewBox="0 -960 960 960"><path d="M479.86-160Q460-160 446-174.14t-14-34Q432-228 446.14-242t34-14Q500-256 514-241.86t14 34Q528-188 513.86-174t-34 14Zm0-272Q460-432 446-446.14t-14-34Q432-500 446.14-514t34-14Q500-528 514-513.86t14 34Q528-460 513.86-446t-34 14Zm0-272Q460-704 446-718.14t-14-34Q432-772 446.14-786t34-14Q500-800 514-785.86t14 34Q528-732 513.86-718t-34 14Z"/></symbol><symbol id="i-phone_disabled" viewBox="0 -960 960 960"><path d="M813-57 578-291q-107 87-211.5 129T165-120q-23 0-34-12.5T120-165v-135q0-16 10-28t25-15l119-26q13-3 26 1.5t23 15.5l95 98q29-14 60.5-37t56.5-43L64-806l43-43L856-99l-43 42ZM362-225l-79-83-103 21v107q45-2 93-14t89-31Zm301-152-43-43q21-25 42.5-56t38.5-57l-99.77-100.77Q593-642 590-653.5t0-25.5l27-126q3-16 13.5-25.5T655-840h140q19.29 0 32.14 12.86Q840-814.29 840-795q0 102-48 214.5T663-377Zm68-211q26-60 38-106.5t11-85.5H673l-23 110 81 82Zm0 0ZM362-225Z"/></symbol><symbol id="i-edit" viewBox="0 -960 960 960"><path d="M180-180h44l472-471-44-44-472 471v44Zm-60 60v-128l575-574q8-8 19-12.5t23-4.5q11 0 22 4.5t20 12.5l44 44q9 9 13 20t4 22q0 11-4.5 22.5T823-694L248-120H120Zm659-617-41-41 41 41Zm-105 64-22-22 44 44-22-22Z"/></symbol><symbol id="i-call" viewBox="0 -960 960 960"><path d="M795-120q-116 0-236.5-56T335-335Q232-438 176-558.5T120-795q0-19.29 12.86-32.14Q145.71-840 165-840h140q14 0 24 10t14 25l26.93 125.64Q372-665 369.5-653.5t-10.73 19.73L259-533q26 44 55 82t64 72q37 38 78 69.5t86 55.5l95-98q10-11 23.15-15 13.15-4 25.85-2l119 26q15 4 25 16.04 10 12.05 10 26.96v135q0 19.29-12.86 32.14Q814.29-120 795-120ZM229-588l81-82-23-110H180q2 42 13.5 88.5T229-588Zm369 363q41 19 89 31t93 14v-107l-103-21-79 83ZM229-588Zm369 363Z"/></symbol><symbol id="i-person_add" viewBox="0 -960 960 960"><path d="M730-400v-130H600v-60h130v-130h60v130h130v60H790v130h-60ZM252-523q-42-42-42-108t42-108q42-42 108-42t108 42q42 42 42 108t-42 108q-42 42-108 42t-108-42ZM40-160v-94q0-35 17.5-63.5T108-360q75-33 133.5-46.5T360-420q60 0 118 13.5T611-360q33 15 51 43t18 63v94H40Zm60-60h520v-34q0-16-9-30.5T587-306q-71-33-120-43.5T360-360q-58 0-107.5 10.5T132-306q-15 7-23.5 21.5T100-254v34Zm324.5-346.5Q450-592 450-631t-25.5-64.5Q399-721 360-721t-64.5 25.5Q270-670 270-631t25.5 64.5Q321-541 360-541t64.5-25.5ZM360-631Zm0 411Z"/></symbol><symbol id="i-person_remove" viewBox="0 -960 960 960"><path d="M648-542v-60h232v60H648Zm-396 19q-42-42-42-108t42-108q42-42 108-42t108 42q42 42 42 108t-42 108q-42 42-108 42t-108-42ZM40-160v-94q0-35 17.5-63.5T108-360q75-33 133.5-46.5T360-420q60 0 118 13.5T611-360q33 15 51 43t18 63v94H40Zm60-60h520v-34q0-16-9-30.5T587-306q-71-33-120-43.5T360-360q-58 0-107.5 10.5T132-306q-15 7-23.5 21.5T100-254v34Zm324.5-346.5Q450-592 450-631t-25.5-64.5Q399-721 360-721t-64.5 25.5Q270-670 270-631t25.5 64.5Q321-541 360-541t64.5-25.5ZM360-631Zm0 411Z"/></symbol><symbol id="i-timer" viewBox="0 -960 960 960"><path d="M360-860v-60h240v60H360Zm90 447h60v-230h-60v230ZM340.5-109.5Q275-138 226-187t-77.5-114.5Q120-367 120-441t28.5-139.5Q177-646 226-695t114.5-77.5Q406-801 480-801q67 0 126 22.5T711-716l51-51 42 42-51 51q36 40 61.5 97T840-441q0 74-28.5 139.5T734-187q-49 49-114.5 77.5T480-81q-74 0-139.5-28.5Zm352-119Q780-316 780-441t-87.5-212.5Q605-741 480-741t-212.5 87.5Q180-566 180-441t87.5 212.5Q355-141 480-141t212.5-87.5ZM480-440Z"/></symbol><symbol id="i-pause_circle" viewBox="0 -960 960 960"><path d="M370-320h60v-320h-60v320Zm160 0h60v-320h-60v320ZM480-80q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-83 31.5-156t86-127Q252-817 325-848.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 82-31.5 155T763-197.5q-54 54.5-127 86T480-80Zm0-60q142 0 241-99.5T820-480q0-142-99-241t-241-99q-141 0-240.5 99T140-480q0 141 99.5 240.5T480-140Zm0-340Z"/></symbol><symbol id="i-phone_callback" viewBox="0 -960 960 960"><path d="M520-520v-240h80v104l200-200 56 56-200 200h104v80H520Zm278 400q-125 0-247-54.5T329-329Q229-429 174.5-551T120-798q0-18 12-30t30-12h162q14 0 25 9.5t13 22.5l26 140q2 16-1 27t-11 19l-97 98q20 37 47.5 71.5T387-386q31 31 65 57.5t72 48.5l94-94q9-9 23.5-13.5T670-390l138 28q14 4 23 14.5t9 23.5v162q0 18-12 30t-30 12ZM241-600l66-66-17-94h-89q5 41 14 81t26 79Zm358 358q39 17 79.5 27t81.5 13v-88l-94-19-67 67ZM241-600Zm358 358Z"/></symbol><symbol id="i-repeat" viewBox="0 -960 960 960"><path d="M280-80 120-240l160-160 56 58-62 62h406v-160h80v240H274l62 62-56 58Zm-80-440v-240h486l-62-62 56-58 160 160-160 160-56-58 62-62H280v160h-80Z"/></symbol><symbol id="i-phone_in_talk" viewBox="0 -960 960 960"><path d="M760-480q0-117-81.5-198.5T480-760v-80q75 0 140.5 28.5t114 77q48.5 48.5 77 114T840-480h-80Zm-160 0q0-50-35-85t-85-35v-80q83 0 141.5 58.5T680-480h-80Zm198 360q-125 0-247-54.5T329-329Q229-429 174.5-551T120-798q0-18 12-30t30-12h162q14 0 25 9.5t13 22.5l26 140q2 16-1 27t-11 19l-97 98q20 37 47.5 71.5T387-386q31 31 65 57.5t72 48.5l94-94q9-9 23.5-13.5T670-390l138 28q14 4 23 14.5t9 23.5v162q0 18-12 30t-30 12ZM241-600l66-66-17-94h-89q5 41 14 81t26 79Zm358 358q39 17 79.5 27t81.5 13v-88l-94-19-67 67ZM241-600Zm358 358Z"/></symbol></defs></svg>
+<main class="page">
+
+<header class="top">
+  <p class="eyebrow">Scam Stop · aperçu avant de coder</p>
+  <h1>Laisser passer les vrais appelants</h1>
+  <p>Un appel que vous attendiez a été rejeté d’un coup. Voici ce que l’appli montrerait une fois corrigée. Rien de ce qui se voit n’est encore codé&nbsp;: j’attends votre «&nbsp;oui&nbsp;».</p>
+  <p class="answer">Quatre questions. Répondez par exemple <b>«&nbsp;1&nbsp;A, 2&nbsp;A, 3&nbsp;A, 4&nbsp;A&nbsp;»</b>, ou <b>«&nbsp;oui à tout&nbsp;»</b> pour prendre mes recommandations (toujours la variante&nbsp;A).</p>
+</header>
+
+<section class="stack">
+  <h2>Ce que vous avez déjà décidé</h2>
+  <p class="soft small">Le 22&nbsp;novembre. Je le réalise, je ne le rediscute pas.</p>
+  <ol>
+    <li>Le premier appel d’un numéro inconnu reste rejeté d’un coup.</li>
+    <li><b>Ceux que j’ai appelés</b>&nbsp;: un numéro que vous avez appelé depuis moins de 30&nbsp;jours peut vous rappeler, ça sonne.</li>
+    <li><b>Le 2e appel passe</b>&nbsp;: le même numéro rappelle dans les 5&nbsp;minutes, ça sonne. Jamais pour un numéro étranger ni pour un numéro signalé usurpé.</li>
+    <li>Écarté&nbsp;: la grande notification avec un bouton «&nbsp;Rappeler&nbsp;».</li>
+  </ol>
+</section>
+
+<section class="stack">
+  <h2>La règle, en clair</h2>
+  <p class="soft small">Ce que je construis derrière les écrans. Dites-le si une ligne ne vous va pas.</p>
+  <div class="cols two">
+    <div class="panel">
+      <h3>Ceux que j’ai appelés</h3>
+      <ul class="small">
+        <li>Vous appelez un numéro hors contacts&nbsp;: dès cet instant, s’il vous rappelle, ça sonne.</li>
+        <li>Pendant 30&nbsp;jours après votre dernier appel vers lui. Vous le rappelez&nbsp;: c’est reparti pour 30&nbsp;jours.</li>
+        <li>Même si vous n’avez pas eu de réponse, et quelle que soit l’écriture du numéro (06…, +33&nbsp;6…, 0033&nbsp;6…).</li>
+        <li>Vaut aussi pour un numéro étranger ou en 08&nbsp;: c’est vous qui l’avez appelé.</li>
+        <li>Sauf si le réseau signale ce numéro comme usurpé&nbsp;: là, il reste rejeté.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Le 2e appel passe</h3>
+      <ul class="small">
+        <li>Un numéro est rejeté. S’il rappelle dans les 5&nbsp;minutes qui suivent ce rejet, ça sonne. Un 3e appel dans ces 5&nbsp;minutes sonne aussi.</li>
+        <li>Passé 5&nbsp;minutes, son prochain appel est de nouveau rejeté, et ouvre 5&nbsp;nouvelles minutes.</li>
+        <li>Seulement pour un numéro français ordinaire&nbsp;: fixe (01 à 05), mobile (06, 07) ou box (09), outre-mer compris (Antilles, Guyane, La Réunion, Mayotte, Saint-Pierre-et-Miquelon).</li>
+        <li>Jamais pour un numéro étranger, ni pour un numéro signalé usurpé.</li>
+        <li>Jamais non plus pour les numéros que l’Arcep réserve aux automates d’appel, ceux du démarchage notamment (01&nbsp;62, 01&nbsp;63, 02&nbsp;70, 02&nbsp;71, 03&nbsp;77, 03&nbsp;78, 04&nbsp;24, 04&nbsp;25, 05&nbsp;68, 05&nbsp;69, 09&nbsp;48, 09&nbsp;49), les numéros en 08 et les numéros courts.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>Ce qui ne change pas</h3>
+    <ul class="small">
+      <li>Vos contacts, vos numéros autorisés et vos SMS passent comme avant.</li>
+      <li>En pause ou protection coupée, tout sonne comme avant.</li>
+      <li>Les numéros masqués&nbsp;: Android ne les transmet toujours pas à l’appli.</li>
+      <li>Les numéros appelés et les rejets récents restent sur le téléphone, ne sont ni envoyés ni sauvegardés, et s’effacent tout seuls une fois périmés.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ================= QUESTION 1 ================= -->
+<section class="stack-lg" id="q1">
+  <div class="q-head">
+    <span class="q-num">Question 1</span>
+    <h2>L’accueil&nbsp;: où ça se voit, et est-ce que ça se coupe&nbsp;?</h2>
+    <p class="legend"><i></i>Fond bleuté dans les écrans&nbsp;: ce qui change.</p>
+  </div>
+
+  <div class="cols two">
+    <div class="variant">
+      <div class="v-title"><span class="v-letter">Aujourd’hui</span><span class="tag now">état actuel</span></div>
+      <div class="phone">
+        <div class="appbar"><span class="ttl">Scam Stop</span></div>
+        <div class="banner">
+          <svg class="ic"><use href="#i-verified_user"/></svg>
+          <div><div class="b-t">Protection active</div><div class="b-x">Les inconnus sont rejetés avant de sonner. Vos contacts et vos SMS passent normalement.</div></div>
+        </div>
+        <div class="row tall"><svg class="ic"><use href="#i-verified_user"/></svg><div class="tx"><div class="hl">Rejeter les inconnus</div><div class="sp">C’est Android qui reconnaît vos contacts : Scam Stop ne les lit pas.</div></div><span class="sw"></span></div>
+        <div class="div"></div>
+        <div class="row"><svg class="ic"><use href="#i-pause"/></svg><div class="tx"><div class="hl">Mettre en pause</div><div class="sp">15 min, 1 h, 3 h ou jusqu’à demain matin</div></div></div>
+        <div class="sect">Appels</div>
+        <div class="row"><svg class="ic"><use href="#i-history"/></svg><div class="tx"><div class="hl">Appels rejetés</div><div class="sp">6 appels aujourd’hui</div></div><svg class="ic"><use href="#i-chevron_right"/></svg></div>
+        <div class="div"></div>
+        <div class="row"><svg class="ic"><use href="#i-how_to_reg"/></svg><div class="tx"><div class="hl">Numéros autorisés</div><div class="sp">2 numéros</div></div><svg class="ic"><use href="#i-chevron_right"/></svg></div>
+        <div class="div"></div>
+        <div class="row tall"><svg class="ic"><use href="#i-info"/></svg><div class="tx"><div class="hl">Numéros masqués</div><div class="sp">Android ne les transmet pas à Scam Stop. Bloquez-les dans l’app Téléphone.</div></div><svg class="ic"><use href="#i-open_in_new"/></svg></div>
+        <div class="sect">Messagerie</div>
+        <div class="row"><svg class="ic"><use href="#i-voicemail"/></svg><div class="tx"><div class="hl">Annonce vocale</div><div class="sp">Installée sur votre messagerie</div></div><svg class="ic"><use href="#i-chevron_right"/></svg></div>
+        <div class="div"></div>
+        <div class="row tall"><svg class="ic"><use href="#i-sms"/></svg><div class="tx"><div class="hl">Répondre par SMS</div><div class="sp">Envoie le texte de l’annonce, une seule fois par numéro. Mobiles 06 et 07 uniquement, jamais à l’étranger, 10 par jour au plus.</div></div><span class="sw off"></span></div>
+        <div class="sect">Notifications</div>
+        <div class="row tall"><svg class="ic"><use href="#i-notifications"/></svg><div class="tx"><div class="hl">Me prévenir à chaque appel rejeté</div><div class="sp">Une notification par appel, avec le numéro</div></div><span class="sw"></span></div>
+      </div>
+    </div>
+
+    <div class="variant">
+      <div class="v-title"><span class="v-letter">1&nbsp;A</span><span class="tag reco">recommandée</span><span class="v-name">Un groupe «&nbsp;Laisser sonner&nbsp;», avec deux interrupteurs</span></div>
+      <p class="why">Tout ce qui laisse passer un inconnu est au même endroit, et vous pouvez couper le 2e appel le jour où un fraudeur s’en sert.</p>
+      <div class="phone">
+        <div class="appbar"><span class="ttl">Scam Stop</span></div>
+        <div class="banner-wrap changed">
+          <div class="banner">
+            <svg class="ic"><use href="#i-verified_user"/></svg>
+            <div><div class="b-t">Protection active</div><div class="b-x">Un inconnu est rejeté à son premier appel. Il sonne s’il rappelle dans les 5 minutes, ou si vous l’avez appelé ces 30 derniers jours. Vos contacts et vos SMS passent normalement.</div></div>
+          </div>
+        </div>
+        <div class="row tall"><svg class="ic"><use href="#i-verified_user"/></svg><div class="tx"><div class="hl">Rejeter les inconnus</div><div class="sp">C’est Android qui reconnaît vos contacts : Scam Stop ne les lit pas.</div></div><span class="sw"></span></div>
+        <div class="div"></div>
+        <div class="row"><svg class="ic"><use href="#i-pause"/></svg><div class="tx"><div class="hl">Mettre en pause</div><div class="sp">15 min, 1 h, 3 h ou jusqu’à demain matin</div></div></div>
+        <div class="sect changed">Laisser sonner</div>
+        <div class="row tall changed"><svg class="ic"><use href="#i-phone_callback"/></svg><div class="tx"><div class="hl">Ceux que j’ai appelés</div><div class="sp">Un numéro que vous avez appelé peut vous rappeler pendant 30 jours.</div></div><span class="sw"></span></div>
+        <div class="div"></div>
+        <div class="row tall changed"><svg class="ic"><use href="#i-repeat"/></svg><div class="tx"><div class="hl">Le 2e appel passe</div><div class="sp">Rejeté une première fois, un numéro qui rappelle dans les 5 minutes sonne. Jamais un numéro étranger ni un numéro signalé usurpé.</div></div><span class="sw"></span></div>
+        <div class="div"></div>
+        <div class="row changed"><svg class="ic"><use href="#i-how_to_reg"/></svg><div class="tx"><div class="hl">Numéros autorisés</div><div class="sp">2 numéros · 3 appelés récemment</div></div><svg class="ic"><use href="#i-chevron_right"/></svg></div>
+        <div class="sect">Appels</div>
+        <div class="row changed"><svg class="ic"><use href="#i-history"/></svg><div class="tx"><div class="hl">Journal des appels</div><div class="sp">4 rejetés · 2 ont sonné aujourd’hui</div></div><svg class="ic"><use href="#i-chevron_right"/></svg></div>
+        <div class="div"></div>
+        <div class="row tall"><svg class="ic"><use href="#i-info"/></svg><div class="tx"><div class="hl">Numéros masqués</div><div class="sp">Android ne les transmet pas à Scam Stop. Bloquez-les dans l’app Téléphone.</div></div><svg class="ic"><use href="#i-open_in_new"/></svg></div>
+        <div class="more">Messagerie et Notifications : sans changement</div>
+      </div>
+      <ul class="foryou">
+        <li><b>Les deux sont allumés d’office</b>&nbsp;: c’est ce que vous avez décidé.</li>
+        <li>Éteindre «&nbsp;Ceux que j’ai appelés&nbsp;» efface aussi les numéros retenus.</li>
+        <li>«&nbsp;Numéros autorisés&nbsp;» rejoint ce groupe. La ligne du journal dépend de la question&nbsp;2, le «&nbsp;3 appelés récemment&nbsp;» de la question&nbsp;3.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="stack">
+    <h3>Le bandeau reste vrai dans chaque cas (variante&nbsp;A)</h3>
+    <div class="cases">
+      <div class="case"><div class="c-k">Les deux allumés</div><div class="c-v">Un inconnu est rejeté à son premier appel. Il sonne s’il rappelle dans les 5&nbsp;minutes, ou si vous l’avez appelé ces 30&nbsp;derniers jours. Vos contacts et vos SMS passent normalement.</div></div>
+      <div class="case"><div class="c-k">Seulement « Ceux que j’ai appelés »</div><div class="c-v">Les inconnus sont rejetés avant de sonner, sauf les numéros que vous avez appelés ces 30&nbsp;derniers jours. Vos contacts et vos SMS passent normalement.</div></div>
+      <div class="case"><div class="c-k">Seulement « Le 2e appel passe »</div><div class="c-v">Un inconnu est rejeté à son premier appel. Il sonne s’il rappelle dans les 5&nbsp;minutes. Vos contacts et vos SMS passent normalement.</div></div>
+      <div class="case"><div class="c-k">Les deux éteints</div><div class="c-v">Les inconnus sont rejetés avant de sonner. Vos contacts et vos SMS passent normalement. <span class="soft">(le texte d’aujourd’hui)</span></div></div>
+    </div>
+  </div>
+
+  <div class="cols two">
+    <div class="variant">
+      <div class="v-title"><span class="v-letter">1&nbsp;B</span><span class="v-name">Le même groupe, sans interrupteur</span></div>
+      <div class="phone cut">
+        <div class="sect changed">Laisser sonner</div>
+        <div class="row tall changed"><svg class="ic"><use href="#i-phone_callback"/></svg><div class="tx"><div class="hl">Ceux que j’ai appelés</div><div class="sp">Un numéro que vous avez appelé peut vous rappeler pendant 30 jours.</div></div></div>
+        <div class="div"></div>
+        <div class="row tall changed"><svg class="ic"><use href="#i-repeat"/></svg><div class="tx"><div class="hl">Le 2e appel passe</div><div class="sp">Rejeté une première fois, un numéro qui rappelle dans les 5 minutes sonne. Jamais un numéro étranger ni un numéro signalé usurpé.</div></div></div>
+        <div class="div"></div>
+        <div class="row changed"><svg class="ic"><use href="#i-how_to_reg"/></svg><div class="tx"><div class="hl">Numéros autorisés</div><div class="sp">2 numéros · 3 appelés récemment</div></div><svg class="ic"><use href="#i-chevron_right"/></svg></div>
+      </div>
+      <p class="foryou"><b>Pour vous&nbsp;:</b> rien à régler, c’est toujours actif. Pour couper l’un des deux, il faudra une nouvelle version de l’appli. Le bandeau porte le texte «&nbsp;les deux allumés&nbsp;».</p>
+    </div>
+    <div class="variant">
+      <div class="v-title"><span class="v-letter">1&nbsp;C</span><span class="v-name">L’accueil ne bouge pas, seul le bandeau change</span></div>
+      <div class="phone cut">
+        <div class="banner-wrap changed">
+          <div class="banner">
+            <svg class="ic"><use href="#i-verified_user"/></svg>
+            <div><div class="b-t">Protection active</div><div class="b-x">Un inconnu est rejeté à son premier appel. Il sonne s’il rappelle dans les 5 minutes, ou si vous l’avez appelé ces 30 derniers jours. Vos contacts et vos SMS passent normalement.</div></div>
+          </div>
+        </div>
+        <div class="row tall"><svg class="ic"><use href="#i-verified_user"/></svg><div class="tx"><div class="hl">Rejeter les inconnus</div><div class="sp">C’est Android qui reconnaît vos contacts : Scam Stop ne les lit pas.</div></div><span class="sw"></span></div>
+        <div class="more">Le reste de l’accueil : comme aujourd’hui</div>
+      </div>
+      <p class="foryou"><b>Pour vous&nbsp;:</b> le moins de changement. Mais rien ne dit où ces deux exceptions se règlent, et aucune ne se coupe.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= QUESTION 2 ================= -->
+<section class="stack-lg" id="q2">
+  <div class="q-head">
+    <span class="q-num">Question 2</span>
+    <h2>Le journal&nbsp;: comment voir un appel qui a sonné, et pourquoi&nbsp;?</h2>
+    <p class="soft small">Même matinée dans les deux écrans&nbsp;: un artisan appelle à 11:46 et rappelle 40&nbsp;secondes plus tard.</p>
+  </div>
+
+  <div class="cols two">
+    <div class="variant">
+      <div class="v-title"><span class="v-letter">Aujourd’hui</span><span class="tag now">état actuel</span></div>
+      <div class="phone">
+        <div class="appbar sub"><span class="nav"><svg class="ic"><use href="#i-arrow_back"/></svg></span><span class="ttl">Appels rejetés</span><span class="nav"><svg class="ic"><use href="#i-more_vert"/></svg></span></div>
+        <div class="sect">Aujourd’hui</div>
+        <div class="row"><svg class="ic"><use href="#i-phone_disabled"/></svg><div class="tx"><div class="hl">01 23 45 67 89</div><div class="sp">Rejeté</div></div><span class="time">11:47</span></div>
+        <div class="row"><svg class="ic"><use href="#i-phone_disabled"/></svg><div class="tx"><div class="hl">01 23 45 67 89</div><div class="sp">Rejeté</div></div><span class="time">11:46</span></div>
+        <div class="row"><svg class="ic"><use href="#i-phone_disabled"/></svg><div class="tx"><div class="hl">04 11 22 33 44</div><div class="sp">Rejeté</div></div><span class="time">10:05</span></div>
+        <div class="row"><svg class="ic"><use href="#i-phone_disabled"/></svg><div class="tx"><div class="hl">09 87 65 43 21</div><div class="sp">Rejeté</div></div><span class="time">09:12</span></div>
+        <div class="row"><svg class="ic"><use href="#i-phone_disabled"/></svg><div class="tx"><div class="hl">+44 7700 900123</div><div class="sp">Rejeté</div></div><span class="time">08:03</span></div>
+        <div class="row"><svg class="ic"><use href="#i-phone_disabled"/></svg><div class="tx"><div class="hl">+44 7700 900123</div><div class="sp">Rejeté</div></div><span class="time">08:02</span></div>
+        <div class="sect">Hier</div>
+        <div class="row"><svg class="ic"><use href="#i-how_to_reg"/></svg><div class="tx"><div class="hl">06 12 34 56 78</div><div class="sp">Désormais autorisé · Livreure</div></div><span class="time">17:30</span></div>
+      </div>
+    </div>
+
+    <div class="variant">
+      <div class="v-title"><span class="v-letter">2&nbsp;A</span><span class="tag reco">recommandée</span><span class="v-name">Une seule liste, dans l’ordre</span></div>
+      <p class="why">L’histoire d’un appel se lit d’un coup d’œil&nbsp;: rejeté à 11:46, a sonné à 11:47.</p>
+      <div class="phone">
+        <div class="appbar sub changed"><span class="nav"><svg class="ic"><use href="#i-arrow_back"/></svg></span><span class="ttl">Journal des appels</span><span class="nav"><svg class="ic"><use href="#i-more_vert"/></svg></span></div>
+        <div class="sect">Aujourd’hui</div>
+        <div class="row changed"><svg class="ic ok"><use href="#i-phone_in_talk"/></svg><div class="tx"><div class="hl">01 23 45 67 89</div><div class="sp">A sonné · 2e appel, 40 s après le rejet</div></div><span class="time">11:47</span></div>
+        <div class="row"><svg class="ic"><use href="#i-phone_disabled"/></svg><div class="tx"><div class="hl">01 23 45 67 89</div><div class="sp">Rejeté</div></div><span class="time">11:46</span></div>
+        <div class="row changed"><svg class="ic ok"><use href="#i-phone_in_talk"/></svg><div class="tx"><div class="hl">04 11 22 33 44</div><div class="sp">A sonné · appelé par vous le 14 nov.</div></div><span class="time">10:05</span></div>
+        <div class="row"><svg class="ic"><use href="#i-phone_disabled"/></svg><div class="tx"><div class="hl">09 87 65 43 21</div><div class="sp">Rejeté</div></div><span class="time">09:12</span></div>
+        <div class="row"><svg class="ic"><use href="#i-phone_disabled"/></svg><div class="tx"><div class="hl">+44 7700 900123</div><div class="sp">Rejeté</div></div><span class="time">08:03</span></div>
+        <div class="row"><svg class="ic"><use href="#i-phone_disabled"/></svg><div class="tx"><div class="hl">+44 7700 900123</div><div class="sp">Rejeté</div></div><span class="time">08:02</span></div>
+        <div class="sect">Hier</div>
+        <div class="row"><svg class="ic"><use href="#i-how_to_reg"/></svg><div class="tx"><div class="hl">06 12 34 56 78</div><div class="sp">Désormais autorisé · Livreure</div></div><span class="time">17:30</span></div>
+      </div>
+      <p class="foryou"><b>En touchant la ligne de 11:47&nbsp;:</b></p>
+      <div class="phone cut">
+        <div class="scrim">
+          <div class="sheet">
+            <div class="handle"></div>
+            <div class="s-top">
+              <div class="s-t">01 23 45 67 89</div>
+              <div class="s-x">A sonné aujourd’hui à 11:47</div>
+              <div class="s-why changed">Rejeté à 11:46, il a rappelé 40 secondes plus tard : « Le 2e appel passe ».</div>
+            </div>
+            <div class="row one"><svg class="ic"><use href="#i-call"/></svg><div class="tx"><div class="hl">Rappeler</div></div></div>
+            <div class="row one"><svg class="ic"><use href="#i-sms"/></svg><div class="tx"><div class="hl">Envoyer un SMS</div></div></div>
+            <div class="row one"><svg class="ic"><use href="#i-person_add"/></svg><div class="tx"><div class="hl">Ajouter aux contacts</div></div></div>
+            <div class="row"><svg class="ic"><use href="#i-how_to_reg"/></svg><div class="tx"><div class="hl">Autoriser ce numéro</div><div class="sp">Il sonnera sans être dans vos contacts</div></div></div>
+          </div>
+        </div>
+      </div>
+      <ul class="foryou">
+        <li>L’écran s’appelle «&nbsp;Journal des appels&nbsp;»&nbsp;; l’accueil résume «&nbsp;4 rejetés · 2 ont sonné aujourd’hui&nbsp;».</li>
+        <li>Chaque appel qui a sonné dit pourquoi, dans la liste et dans sa fiche.</li>
+        <li>Les deux appels du +44 restent rejetés&nbsp;: numéro étranger.</li>
+        <li>La notification ne change pas&nbsp;: elle ne prévient que des rejets.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="variant">
+    <div class="v-title"><span class="v-letter">2&nbsp;B</span><span class="v-name">Deux listes séparées</span></div>
+    <div class="phone cut">
+      <div class="sect">Appels</div>
+      <div class="row"><svg class="ic"><use href="#i-history"/></svg><div class="tx"><div class="hl">Appels rejetés</div><div class="sp">4 appels aujourd’hui</div></div><svg class="ic"><use href="#i-chevron_right"/></svg></div>
+      <div class="div"></div>
+      <div class="row changed"><svg class="ic"><use href="#i-phone_in_talk"/></svg><div class="tx"><div class="hl">Appels qui ont sonné</div><div class="sp">2 appels aujourd’hui</div></div><svg class="ic"><use href="#i-chevron_right"/></svg></div>
+    </div>
+    <p class="foryou"><b>Pour vous&nbsp;:</b> «&nbsp;Appels rejetés&nbsp;» reste tel quel et une ligne de plus sur l’accueil ouvre l’autre liste. Le rejet de 11:46 et la sonnerie de 11:47 ne sont plus côte à côte.</p>
+  </div>
+</section>
+
+<!-- ================= QUESTION 3 ================= -->
+<section class="stack-lg" id="q3">
+  <div class="q-head">
+    <span class="q-num">Question 3</span>
+    <h2>Les numéros que vous avez appelés&nbsp;: les voir et les retirer&nbsp;?</h2>
+  </div>
+
+  <div class="cols two">
+    <div class="variant">
+      <div class="v-title"><span class="v-letter">Aujourd’hui</span><span class="tag now">état actuel</span></div>
+      <div class="phone">
+        <div class="appbar sub"><span class="nav"><svg class="ic"><use href="#i-arrow_back"/></svg></span><span class="ttl">Numéros autorisés</span></div>
+        <div class="intro">Ces numéros sonnent normalement sans être dans vos contacts : un livreur, un artisan, un rendez-vous.</div>
+        <div class="row"><svg class="ic"><use href="#i-how_to_reg"/></svg><div class="tx"><div class="hl">Livreure</div><div class="sp">06 12 34 56 78</div></div><svg class="ic"><use href="#i-edit"/></svg></div>
+        <div class="row"><svg class="ic"><use href="#i-how_to_reg"/></svg><div class="tx"><div class="hl">Plombier</div><div class="sp">07 11 22 33 44</div></div><svg class="ic"><use href="#i-edit"/></svg></div>
+        <div class="fabwrap"><span class="fab"><svg class="ic"><use href="#i-add"/></svg>Ajouter un numéro</span></div>
+      </div>
+    </div>
+
+    <div class="variant">
+      <div class="v-title"><span class="v-letter">3&nbsp;A</span><span class="tag reco">recommandée</span><span class="v-name">Visibles dans «&nbsp;Numéros autorisés&nbsp;»</span></div>
+      <p class="why">Vous voyez qui peut passer, vous retirez celui qui abuse, vous gardez pour de bon celui qui compte.</p>
+      <div class="phone">
+        <div class="appbar sub"><span class="nav"><svg class="ic"><use href="#i-arrow_back"/></svg></span><span class="ttl">Numéros autorisés</span></div>
+        <div class="intro">Ces numéros sonnent normalement sans être dans vos contacts : un livreur, un artisan, un rendez-vous.</div>
+        <div class="row"><svg class="ic"><use href="#i-how_to_reg"/></svg><div class="tx"><div class="hl">Livreure</div><div class="sp">06 12 34 56 78</div></div><svg class="ic"><use href="#i-edit"/></svg></div>
+        <div class="row"><svg class="ic"><use href="#i-how_to_reg"/></svg><div class="tx"><div class="hl">Plombier</div><div class="sp">07 11 22 33 44</div></div><svg class="ic"><use href="#i-edit"/></svg></div>
+        <div class="sect changed">Appelés ces 30 derniers jours</div>
+        <div class="caption changed">Ajoutés tout seuls quand vous appelez un numéro hors contacts. Ils s’effacent au bout de 30 jours.</div>
+        <div class="row changed"><svg class="ic"><use href="#i-phone_callback"/></svg><div class="tx"><div class="hl">01 23 45 67 89</div><div class="sp">Appelé aujourd’hui · sonne jusqu’au 22 déc.</div></div></div>
+        <div class="row changed"><svg class="ic"><use href="#i-phone_callback"/></svg><div class="tx"><div class="hl">04 11 22 33 44</div><div class="sp">Appelé le 14 nov. · sonne jusqu’au 14 déc.</div></div></div>
+        <div class="row changed"><svg class="ic"><use href="#i-phone_callback"/></svg><div class="tx"><div class="hl">02 11 22 33 44</div><div class="sp">Appelé le 3 nov. · sonne jusqu’au 3 déc.</div></div></div>
+        <div class="fabwrap"><span class="fab"><svg class="ic"><use href="#i-add"/></svg>Ajouter un numéro</span></div>
+      </div>
+      <p class="foryou"><b>En touchant un numéro appelé&nbsp;:</b></p>
+      <div class="phone cut">
+        <div class="dialogwrap">
+          <div class="dialog">
+            <div class="d-t">Numéro appelé</div>
+            <div class="d-n">04 11 22 33 44</div>
+            <div class="d-x">Vous l’avez appelé le 14 nov. S’il vous rappelle d’ici le 14 déc., ça sonne.</div>
+            <div class="d-b"><span class="danger">Retirer</span><span class="go">Toujours autoriser</span></div>
+          </div>
+        </div>
+      </div>
+      <ul class="foryou">
+        <li>«&nbsp;Retirer&nbsp;»&nbsp;: il sera de nouveau rejeté (avec «&nbsp;Annuler&nbsp;» pendant quelques secondes).</li>
+        <li>«&nbsp;Toujours autoriser&nbsp;»&nbsp;: il passe dans vos numéros autorisés, avec un nom si vous voulez.</li>
+        <li>C’est aussi là que vous verrez, sur votre téléphone, que l’appli retient bien vos appels.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="variant">
+    <div class="v-title"><span class="v-letter">3&nbsp;B</span><span class="v-name">On ne les montre pas</span></div>
+    <p class="foryou"><b>Pour vous&nbsp;:</b> l’écran «&nbsp;Numéros autorisés&nbsp;» reste comme aujourd’hui. Un numéro appelé par erreur peut sonner 30&nbsp;jours&nbsp;; pour l’en empêcher, il faut éteindre «&nbsp;Ceux que j’ai appelés&nbsp;», ce qui les oublie tous.</p>
+  </div>
+</section>
+
+<!-- ================= QUESTION 4 ================= -->
+<section class="stack-lg" id="q4">
+  <div class="q-head">
+    <span class="q-num">Question 4</span>
+    <h2>L’annonce et le SMS&nbsp;: dire de rappeler tout de suite&nbsp;?</h2>
+    <p class="soft small">L’annonce actuelle dit «&nbsp;je refuse tout appel inconnu&nbsp;»&nbsp;: celui qui l’écoute jusqu’au bout comprend qu’il est inutile de rappeler. Le SMS de réponse, s’il est activé, reprend le même texte.</p>
+  </div>
+
+  <div class="variant">
+    <div class="v-title"><span class="v-letter">Aujourd’hui</span><span class="tag now">état actuel</span></div>
+    <p class="say">Suite aux appels de scam incessants, je refuse tout appel inconnu. Pour me contacter, veuillez m’envoyer un SMS en me disant qui vous êtes.</p>
+  </div>
+
+  <div class="variant">
+    <div class="v-title"><span class="v-letter">4&nbsp;A</span><span class="tag reco">recommandée</span><span class="v-name">Le dire clairement</span></div>
+    <p class="why">Sans cette phrase, le 2e appel ne sert qu’à ceux qui rappellent d’eux-mêmes. Avec elle, l’artisan qui tombe sur l’annonce sait quoi faire.</p>
+    <p class="say">Suite aux appels de scam incessants, <mark>le premier appel d’un numéro inconnu est refusé. Rappelez tout de suite&nbsp;: votre deuxième appel sonnera.</mark> Vous pouvez aussi m’envoyer un SMS en me disant qui vous êtes.</p>
+    <ul class="foryou">
+      <li><b>Le risque&nbsp;:</b> un fraudeur qui écoute l’annonce jusqu’au bout l’apprend aussi.</li>
+      <li><b>À faire une fois&nbsp;:</b> coller ce texte dans «&nbsp;Annonce vocale&nbsp;» (un texte déjà enregistré ne change pas tout seul), recréer le fichier et réenregistrer l’annonce sur la messagerie. C’est à refaire de toute façon avec la nouvelle voix.</li>
+      <li>Si un jour vous éteignez «&nbsp;Le 2e appel passe&nbsp;», il faudra revenir à l’ancien texte.</li>
+    </ul>
+  </div>
+
+  <div class="cols two">
+    <div class="variant">
+      <div class="v-title"><span class="v-letter">4&nbsp;B</span><span class="v-name">Ne rien dire</span></div>
+      <p class="say">Suite aux appels de scam incessants, je refuse tout appel inconnu. Pour me contacter, veuillez m’envoyer un SMS en me disant qui vous êtes.</p>
+      <p class="foryou"><b>Pour vous&nbsp;:</b> rien à refaire, rien d’appris aux fraudeurs. Mais le 2e appel ne profite qu’à ceux qui rappellent sans y être invités.</p>
+    </div>
+    <div class="variant">
+      <div class="v-title"><span class="v-letter">4&nbsp;C</span><span class="v-name">Le suggérer sans promettre</span></div>
+      <p class="say">Suite aux appels de scam incessants, je refuse tout appel inconnu. <mark>Si c’est important, rappelez-moi tout de suite,</mark> ou envoyez-moi un SMS en me disant qui vous êtes.</p>
+      <p class="foryou"><b>Pour vous&nbsp;:</b> invite à rappeler sans dire que ça sonnera. Même manipulation que A, et un fraudeur peut rappeler tout autant.</p>
+    </div>
+  </div>
+</section>
+
+<section class="stack">
+  <h2>Autorisation Android&nbsp;: aucune nouvelle</h2>
+  <p>Android prévient déjà Scam Stop quand vous appelez un numéro hors contacts&nbsp;: c’est écrit dans sa documentation et dans son code source. Pas de journal d’appels à lire, pas d’accès aux contacts.</p>
+  <p class="note">Je n’ai pas pu l’essayer sur un vrai téléphone. À la livraison, un essai simple suffira&nbsp;: appeler un numéro hors contacts, puis vérifier qu’il apparaît dans l’appli.</p>
+</section>
+
+<footer>
+  Écrans reconstruits d’après le code de l’appli, pas des captures&nbsp;: cette session n’a pas d’émulateur. Les numéros sont fictifs. Après votre «&nbsp;oui&nbsp;», je vous montrerai le rendu réel à côté de cet aperçu.
+</footer>
+
+</main>
+</body>
+</html>
