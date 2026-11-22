@@ -19,6 +19,12 @@ retour sur le PC ; dans le cloud, livrer par commit sur une branche.
 GitHub Actions (`.github/workflows/android.yml`) compile chaque push et joint l'APK au run ;
 un tag `v<version>` le publie dans Releases.
 
+# Mémoire du projet
+
+- `docs/PLAN.md` : chantiers en cours (supprimé une fois livrés). `docs/JOURNAL.md` : ce qui s'est
+  passé. `docs/DECISIONS.md` : ce qui est décidé. `docs/previews/` : aperçus montrés avant le code.
+- Au début d'une session : le plan, les trois dernières entrées du journal, puis les décisions.
+
 # Règles de livraison — Scam Stop
 
 ## Après chaque changement livré (sans demander)
