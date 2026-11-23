@@ -23,7 +23,8 @@
 
 Lien à ouvrir sur téléphone : `docs/previews/vrais-appelants.md` (GitHub l'affiche avec ses cinq images).
 Page d'origine : `docs/previews/vrais-appelants.html` (statique, sans script, claire et sombre, vérifiée à 400 px).
-Les écrans « Aujourd'hui » sont reconstruits d'après le code : pas d'émulateur dans la session.
+Les écrans « Aujourd'hui » sont reconstruits d'après le code (pas d'émulateur dans la session), puis comparés au
+rendu réel de l'appli : voir « Vérifications ».
 
 | Question | Recommandation | Autres variantes |
 |---|---|---|
@@ -189,13 +190,13 @@ Exclusions de D3 :
   2e appel qui sonne, numéro composé qui sonne après un redémarrage, étranger, usurpé et masqué rejetés à chaque
   fois, pause sans trace, exception éteinte qui efface sa mémoire.
 - **Pas essayé** : un vrai téléphone, de vrais appels, le vrai Telecom d'un fabricant.
-
-- La compilation GitHub du dernier commit de la branche se lit dans l'onglet Actions du dépôt. Le commit qui
-  ajoute ce fichier ne touche à aucun code.
+- La compilation GitHub du dernier commit se lit dans l'onglet Actions du dépôt. Les commits postérieurs à
+  `68781da` ne modifient que ce fichier.
 
 ## Essais à faire sur le téléphone
 
 À faire une fois l'APK livré par le PC. Il faut un second téléphone dont le numéro n'est pas dans les contacts.
+Le « Diagnostic du filtrage » des essais 1, 6 et 7 n'existe que dans un APK debug, celui que le PC compile.
 
 1. **Android transmet-il les appels sortants ?** Appeler ce second téléphone, raccrocher. Ouvrir Scam Stop, tout
    en bas « Diagnostic du filtrage » : une ligne « sortant · retenu pour 30 jours » doit être apparue. Si rien
@@ -212,7 +213,7 @@ Exclusions de D3 :
 
 ## Problèmes et dette
 
-- **Android 10.** Dans le code d'Android 10 (`CallScreeningServiceController.bindCarrierService`), quand
+- **Android 10.** Lu dans le code, non essayé : sous Android 10 (`CallScreeningServiceController.bindCarrierService`), quand
   l'opérateur n'a pas d'appli de filtrage, le service reçoit aussi les appels des contacts : Scam Stop les
   rejetterait. L'appli accepte Android 10 (`minSdk = 29`). Antérieur à ce chantier. À trancher : exiger Android 11,
   ou prévenir dans l'appli.
