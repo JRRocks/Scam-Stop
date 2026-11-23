@@ -58,6 +58,8 @@ android {
 
     testOptions {
         unitTests.isReturnDefaultValues = true
+        // Robolectric reads the manifest and the resources of the app under test.
+        unitTests.isIncludeAndroidResources = true
     }
 }
 
@@ -81,4 +83,10 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     testImplementation("junit:junit:4.13.2")
+
+    // Android-backed tests on the JVM (Robolectric): the screening service, the store, and the
+    // screen captures. A block of its own: the voice workstream may add the same lines, keep
+    // one copy when merging.
+    testImplementation("org.robolectric:robolectric:4.16")
+    testImplementation("androidx.test:core:1.7.0")
 }

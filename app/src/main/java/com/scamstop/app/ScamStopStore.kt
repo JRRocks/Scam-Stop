@@ -2,6 +2,7 @@ package com.scamstop.app
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.annotation.VisibleForTesting
 import androidx.core.content.edit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -235,5 +236,9 @@ internal class ScamStopStore private constructor(private val appContext: Context
         fun get(context: Context): ScamStopStore = instance ?: synchronized(this) {
             instance ?: ScamStopStore(context.applicationContext).also { instance = it }
         }
+
+        /** Tests only: the next [get] reads the stored data again, as a new process would. */
+        @VisibleForTesting
+        fun forgetInstance() = synchronized(this) { instance = null }
     }
 }
