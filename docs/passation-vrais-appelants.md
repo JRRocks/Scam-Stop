@@ -17,6 +17,7 @@
 | `208b18f` | Logique D2 et D3, stockage, service, tests, diagnostic réservé au debug |
 | `e1537fb` | Le service répond même si le pays du réseau ne peut pas être lu |
 | `6c54aa0` | Test du vrai service sous Robolectric ; dépendances de test dans `app/build.gradle.kts` |
+| `68781da` | Rendu des écrans actuels en images par un test (`app/build/captures/`, non versionné) |
 
 ## L'aperçu et les quatre questions
 
@@ -109,8 +110,8 @@ Hors du périmètre annoncé, à connaître pour l'intégration :
 - Nouveaux dossiers : `app/src/debug`, `app/src/release`, `app/src/testDebug`.
 - `ui/HomeScreen.kt` et `ui/RejectedCallsScreen.kt` : un filtre invisible (seuls les rejets s'affichent) et
   l'appel du diagnostic debug. `strings.xml` et le manifeste ne sont pas touchés.
-- `app/build.gradle.kts` : un bloc à part pour Robolectric 4.16 et `androidx.test:core` 1.7.0, et
-  `unitTests.isIncludeAndroidResources`. L'autre chantier peut ajouter les mêmes lignes : n'en garder qu'une copie.
+- `app/build.gradle.kts` : un bloc à part pour Robolectric 4.16, `androidx.test:core` 1.7.0, `ui-test-junit4` et
+  `ui-test-manifest` (debug), et `unitTests.isIncludeAndroidResources`. L'autre chantier peut ajouter les mêmes lignes : n'en garder qu'une copie.
   Au premier lancement des tests, Robolectric télécharge une archive d'Android d'environ 200 Mo depuis Maven
   Central. Dans la session cloud, Maven Central a répondu 429 : l'archive a été posée à la main dans `~/.m2`
   depuis le miroir de Google (fiche `android-en-session-cloud` de la Library).
@@ -171,8 +172,9 @@ Exclusions de D3 :
 | Commande ou contrôle | Résultat |
 |---|---|
 | `./gradlew test lint assembleDebug` sur `main` avant tout changement (JDK 21, SDK 36) | `BUILD SUCCESSFUL` |
-| `./gradlew test lint assembleDebug` sur `6c54aa0` | `BUILD SUCCESSFUL` ; 101 tests en debug, 99 en release, 0 échec ; lint : 0 erreur, 5 avertissements de version de dépendance (4 présents avant, 1 pour Robolectric) |
-| GitHub Actions (workflow Android) sur `e1537fb` | run n° 7 : réussi (tests, lint, compilation debug) |
+| `./gradlew test lint assembleDebug` sur `68781da` | `BUILD SUCCESSFUL` ; 102 tests en debug, 99 en release, 0 échec ; lint : 0 erreur, 5 avertissements de version de dépendance (4 présents avant, 1 pour Robolectric) |
+| GitHub Actions (workflow Android) sur `e1537fb` puis `dc4a47d` | runs n° 7 et n° 8 : réussis (tests, lint, compilation debug ; le n° 8 exécute le test du vrai service) |
+| Écrans « Aujourd'hui » de l'aperçu comparés au rendu réel (`CurrentScreensCaptureTest`, 360 dp, français) | mêmes textes, mêmes icônes, même ordre. Écarts : lignes un peu plus hautes dans l'appli ; « Me prévenir à chaque appel rejeté » y tient sur une ligne ; la version debug ajoute la ligne de diagnostic en bas de l'accueil |
 | Aperçu rendu par Chromium à 400 px et 1000 px, clair et sombre | aucun débordement horizontal, aucune balise de script |
 
 - Un test a trouvé un vrai défaut pendant l'écriture (le chiffre 6 des mobiles manquait dans la liste des numéros
@@ -240,6 +242,6 @@ Exclusions de D3 :
 1. Recevoir les réponses aux questions 1 à 4, de l'utilisateur ou relayées avec ses mots.
 2. Coder fidèlement l'aperçu validé : accueil, journal, numéros autorisés, textes ; trois icônes Material Symbols
    (`phone_callback`, `repeat`, `phone_in_talk`, licence Apache 2.0).
-3. Montrer le rendu réel à côté de l'aperçu (captures Robolectric), mettre à jour le `README.md`
-   (Fonctionnement, Limites).
+3. Montrer le rendu réel à côté de l'aperçu, avec l'outil de capture déjà en place
+   (`app/src/testDebug/.../capture/`), puis mettre à jour le `README.md` (Fonctionnement, Limites).
 4. Compléter cette passation, pousser.
