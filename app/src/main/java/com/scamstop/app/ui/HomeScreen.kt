@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.scamstop.app.CallOutcome
 import com.scamstop.app.GreetingPrefs
 import com.scamstop.app.PauseOption
 import com.scamstop.app.ProtectionKind
@@ -211,7 +212,8 @@ internal fun HomeScreen(
             SectionHeader(stringResource(R.string.section_calls))
             SettingRow(
                 title = stringResource(R.string.calls_title),
-                supporting = callsSummary(context, calls.map { it.timeMillis }, now),
+                // Calls that an exception let ring stay out of sight until the journal shows them.
+                supporting = callsSummary(context, calls.filter { it.outcome == CallOutcome.REJECTED }.map { it.timeMillis }, now),
                 icon = R.drawable.ic_ms_history,
                 onClick = onOpenCalls,
                 trailing = { ChevronIcon() },
@@ -288,6 +290,9 @@ internal fun HomeScreen(
                 checked = notifyChecked,
                 onCheckedChange = enableNotifications,
             )
+
+            // Debug builds only: what Android hands to the screening service on this phone.
+            DebugDiagnosticsRow()
         }
     }
 

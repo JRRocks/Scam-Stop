@@ -1,0 +1,26 @@
+<resources>
+    <!-- Debug builds only: screening diagnostic. -->
+    <string name="debug_diag_title">Diagnostic du filtrage</string>
+    <string name="debug_diag_row_text">Version de test : ce qu’Android transmet à Scam Stop</string>
+    <string name="debug_diag_intro">Chaque appel qu’Android transmet à Scam Stop laisse une ligne ici. Pour vérifier « Ceux que j’ai appelés » : appelez un numéro hors contacts, puis revenez ; une ligne « sortant » doit apparaître. Les numéros sont masqués, sauf leur début et leurs deux derniers chiffres.</string>
+    <string name="debug_diag_counts">Sortants vus : %1$d · entrants vus : %2$d</string>
+    <string name="debug_diag_empty">Aucun appel vu pour l’instant.</string>
+    <string name="debug_diag_copy">Copier le rapport</string>
+    <string name="debug_diag_copied">Rapport copié</string>
+    <string name="debug_diag_clear">Effacer ces lignes</string>
+    <string name="debug_diag_event_title">%1$s · %2$s · %3$s</string>
+    <string name="debug_diag_event_text">%1$s · réseau : %2$s · %3$s · réponse en %4$d ms</string>
+    <string name="debug_diag_outgoing">sortant</string>
+    <string name="debug_diag_incoming">entrant</string>
+    <string name="debug_diag_other">autre</string>
+    <string name="debug_diag_french_network">réseau français</string>
+    <string name="debug_diag_foreign_network">réseau étranger</string>
+    <string name="debug_diag_outgoing_remembered">retenu pour 30 jours</string>
+    <string name="debug_diag_outgoing_not_remembered">non retenu</string>
+    <string name="debug_diag_not_a_call">ignoré</string>
+    <string name="debug_diag_unfiltered">non filtré (pause, coupé ou numéro autorisé)</string>
+    <string name="debug_diag_called_back">a sonné : numéro appelé</string>
+    <string name="debug_diag_second_call">a sonné : 2e appel</string>
+    <string name="debug_diag_rejected">rejeté</string>
+    <string name="debug_diag_rejected_may_call_again">rejeté, 2e appel possible</string>
+</resources>

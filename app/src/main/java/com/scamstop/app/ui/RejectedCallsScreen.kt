@@ -41,10 +41,11 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.scamstop.app.AllowedNumber
+import com.scamstop.app.CallOutcome
 import com.scamstop.app.PhoneNumbers
 import com.scamstop.app.R
-import com.scamstop.app.RejectedCall
 import com.scamstop.app.ScamStopStore
+import com.scamstop.app.ScreenedCall
 import com.scamstop.app.formatPhoneNumber
 import com.scamstop.app.formatTime
 import com.scamstop.app.groupByDay
@@ -60,7 +61,9 @@ internal fun RejectedCallsScreen(store: ScamStopStore, onBack: () -> Unit) {
     val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
-    val calls by store.calls.collectAsStateWithLifecycle()
+    val journal by store.calls.collectAsStateWithLifecycle()
+    // Calls that an exception let ring stay out of sight until this screen shows them.
+    val calls = remember(journal) { journal.filter { it.outcome == CallOutcome.REJECTED } }
     val allowlist by store.allowlist.collectAsStateWithLifecycle()
     // Saved as plain values so the sheet and the dialog survive a rotation.
     var selectedTime by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -175,7 +178,7 @@ internal fun RejectedCallsScreen(store: ScamStopStore, onBack: () -> Unit) {
 }
 
 @Composable
-private fun CallRow(call: RejectedCall, allowed: AllowedNumber?, onClick: () -> Unit) {
+private fun CallRow(call: ScreenedCall, allowed: AllowedNumber?, onClick: () -> Unit) {
     val context = LocalContext.current
     SettingRow(
         title = context.formatPhoneNumber(call.number),
@@ -219,7 +222,7 @@ private fun rejectedWhen(timeMillis: Long): String {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CallActionsSheet(
-    call: RejectedCall,
+    call: ScreenedCall,
     allowed: AllowedNumber?,
     onDismiss: () -> Unit,
     onUnavailable: () -> Unit,

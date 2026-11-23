@@ -17,16 +17,21 @@ internal data class ProtectionSettings(
     val setupHidden: Boolean,
     val tileAdded: Boolean,
     val smsReply: Boolean,
+    /** "Ceux que j'ai appelés": a number the user called may ring back for 30 days. */
+    val calledBack: Boolean,
+    /** "Le 2e appel passe": a rejected number may ring if it calls again within 5 minutes. */
+    val secondCall: Boolean,
 )
 
 /**
  * The blocking switch and the pause stay in the device-protected file of version 1.0.
- * The call journal, the allowed numbers and the screen flags are personal data: they live
- * in credential-protected storage, which the screening service can read because Android
- * only binds it once the phone has been unlocked.
+ * The call journal, the allowed numbers, the numbers the user called, the recent rejections
+ * and the screen flags are personal data: they live in credential-protected storage, which
+ * the screening service can read because Android only binds it once the phone has been
+ * unlocked. Nothing here is backed up or transferred (res/xml/data_extraction_rules.xml).
  * One instance per process: the app, the screening service and the tile share its flows.
  */
-internal class ScamStopStore private constructor(private val appContext: Context) {
+internal class ScamStopStore private constructor(private val appContext: Context) : ScreeningMemory {
     private val protection: SharedPreferences = appContext.createDeviceProtectedStorageContext()
         .getSharedPreferences(PROTECTION_PREFERENCES, Context.MODE_PRIVATE)
     private val prefs: SharedPreferences = appContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
@@ -35,10 +40,24 @@ internal class ScamStopStore private constructor(private val appContext: Context
     val settings: StateFlow<ProtectionSettings> = _settings.asStateFlow()
 
     private val _calls = MutableStateFlow(RecordCodec.decodeCalls(prefs.getString(CALLS_KEY, null)))
-    val calls: StateFlow<List<RejectedCall>> = _calls.asStateFlow()
+
+    /** The journal, newest first: the rejected calls and those an exception let ring. */
+    val calls: StateFlow<List<ScreenedCall>> = _calls.asStateFlow()
 
     private val _allowlist = MutableStateFlow(RecordCodec.decodeAllowlist(prefs.getString(ALLOWLIST_KEY, null)))
     val allowlist: StateFlow<List<AllowedNumber>> = _allowlist.asStateFlow()
+
+    private val _calledNumbers =
+        MutableStateFlow(RecordCodec.decodeCalledNumbers(prefs.getString(CALLED_NUMBERS_KEY, null)))
+
+    /** Newest first. An entry stops counting after 30 days, a little before it is erased. */
+    val calledNumbers: StateFlow<List<CalledNumber>> = _calledNumbers.asStateFlow()
+
+    private var recentRejections = RecordCodec.decodeRejections(prefs.getString(RECENT_REJECTIONS_KEY, null))
+
+    init {
+        forgetExpired(System.currentTimeMillis())
+    }
 
     fun setEnabled(enabled: Boolean) = editProtection {
         putBoolean(ENABLED_KEY, enabled)
@@ -67,6 +86,17 @@ internal class ScamStopStore private constructor(private val appContext: Context
 
     fun setSmsReply(enabled: Boolean) = editSettings { putBoolean(SMS_REPLY_KEY, enabled) }
 
+    /** Turning it off also forgets the numbers remembered so far. */
+    fun setCalledBack(enabled: Boolean) = synchronized(this) {
+        if (!enabled) writeCalledNumbers(emptyList())
+        editSettings { putBoolean(CALLED_BACK_KEY, enabled) }
+    }
+
+    fun setSecondCall(enabled: Boolean) = synchronized(this) {
+        if (!enabled) writeRejections(emptyList())
+        editSettings { putBoolean(SECOND_CALL_KEY, enabled) }
+    }
+
     /**
      * Marks the number as texted when a reply is allowed, before it is sent: two calls in
      * a row from the same number cannot both get one.
@@ -79,15 +109,52 @@ internal class ScamStopStore private constructor(private val appContext: Context
         true
     }
 
-    fun addRejectedCall(call: RejectedCall) = writeCalls(_calls.value.withNewCall(call))
+    override fun screeningState(now: Long): ScreeningState = synchronized(this) {
+        val settings = _settings.value
+        ScreeningState(
+            isBlocking = isBlocking(settings.isEnabled, settings.pausedUntil, now),
+            allowlist = _allowlist.value,
+            calledBackEnabled = settings.calledBack,
+            secondCallEnabled = settings.secondCall,
+            calledNumbers = _calledNumbers.value,
+            recentRejections = recentRejections,
+            notify = settings.notify,
+            smsReply = settings.smsReply,
+        )
+    }
+
+    override fun addToJournal(call: ScreenedCall) = synchronized(this) {
+        writeCalls(_calls.value.withNewCall(call))
+        forgetExpired(call.timeMillis)
+    }
+
+    override fun rememberCalledNumber(call: CalledNumber) = synchronized(this) {
+        writeCalledNumbers(_calledNumbers.value.withCall(call, call.timeMillis))
+        forgetExpired(call.timeMillis)
+    }
+
+    override fun rememberRejection(rejection: RecentRejection) = synchronized(this) {
+        writeRejections(recentRejections.withRejection(rejection, rejection.timeMillis))
+    }
+
+    /**
+     * Erases what no longer counts: numbers called more than 30 days ago and rejections older
+     * than 5 minutes. Runs when the process starts, then with each call written down.
+     */
+    fun forgetExpired(now: Long) = synchronized(this) {
+        val calls = _calledNumbers.value.unexpired(now)
+        if (calls != _calledNumbers.value) writeCalledNumbers(calls)
+        val rejections = recentRejections.unexpired(now)
+        if (rejections != recentRejections) writeRejections(rejections)
+    }
 
     /** Returns what was cleared, so the screen can offer to undo. */
-    fun clearCalls(): List<RejectedCall> = synchronized(this) {
+    fun clearCalls(): List<ScreenedCall> = synchronized(this) {
         _calls.value.also { writeCalls(emptyList()) }
     }
 
-    fun restoreCalls(calls: List<RejectedCall>) = synchronized(this) {
-        writeCalls((_calls.value + calls).sortedByDescending { it.timeMillis }.take(MAX_REJECTED_CALLS))
+    fun restoreCalls(calls: List<ScreenedCall>) = synchronized(this) {
+        writeCalls((_calls.value + calls).sortedByDescending { it.timeMillis }.take(MAX_JOURNAL_CALLS))
     }
 
     fun allow(number: String, label: String) = writeAllowlist(_allowlist.value.withAllowed(AllowedNumber(number, label)))
@@ -104,6 +171,8 @@ internal class ScamStopStore private constructor(private val appContext: Context
         setupHidden = prefs.getBoolean(SETUP_HIDDEN_KEY, false),
         tileAdded = prefs.getBoolean(TILE_ADDED_KEY, false),
         smsReply = prefs.getBoolean(SMS_REPLY_KEY, false),
+        calledBack = prefs.getBoolean(CALLED_BACK_KEY, true),
+        secondCall = prefs.getBoolean(SECOND_CALL_KEY, true),
     )
 
     private fun editSettings(block: SharedPreferences.Editor.() -> Unit) = synchronized(this) {
@@ -119,9 +188,19 @@ internal class ScamStopStore private constructor(private val appContext: Context
         ProtectionTileService.requestUpdate(appContext)
     }
 
-    private fun writeCalls(calls: List<RejectedCall>) = synchronized(this) {
+    private fun writeCalls(calls: List<ScreenedCall>) = synchronized(this) {
         prefs.edit { putString(CALLS_KEY, RecordCodec.encodeCalls(calls)) }
         _calls.value = calls
+    }
+
+    private fun writeCalledNumbers(calls: List<CalledNumber>) = synchronized(this) {
+        prefs.edit { putString(CALLED_NUMBERS_KEY, RecordCodec.encodeCalledNumbers(calls)) }
+        _calledNumbers.value = calls
+    }
+
+    private fun writeRejections(rejections: List<RecentRejection>) = synchronized(this) {
+        prefs.edit { putString(RECENT_REJECTIONS_KEY, RecordCodec.encodeRejections(rejections)) }
+        recentRejections = rejections
     }
 
     private fun writeAllowlist(entries: List<AllowedNumber>) = synchronized(this) {
@@ -143,6 +222,10 @@ internal class ScamStopStore private constructor(private val appContext: Context
         private const val TILE_ADDED_KEY = "tile_added"
         private const val SMS_REPLY_KEY = "sms_reply"
         private const val SMS_REPLIES_KEY = "sms_replies"
+        private const val CALLED_BACK_KEY = "called_back"
+        private const val SECOND_CALL_KEY = "second_call"
+        private const val CALLED_NUMBERS_KEY = "called_numbers"
+        private const val RECENT_REJECTIONS_KEY = "recent_rejections"
         private const val CALLS_KEY = "rejected_calls"
         private const val ALLOWLIST_KEY = "allowlist"
 
