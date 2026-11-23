@@ -1,0 +1,6 @@
+@default_greeting
+Bonjour, vous êtes bien sur ma messagerie. Je filtre les appels des numéros que je ne connais pas. Laissez-moi un message avec votre nom et la raison de votre appel, je vous rappellerai.
+Bonjour. Si vous êtes un livreur, un artisan ou un médecin, envoyez-moi un SMS avec votre nom : je vous rappelle tout de suite.
+Ce numéro n'accepte pas les appels des numéros inconnus. Pour me joindre, écrivez-moi un message : dites-moi qui vous êtes et pourquoi vous appelez.
+Je ne réponds pas aux numéros que je ne connais pas, à cause du démarchage téléphonique. Merci de m'envoyer un texto, ou de laisser un message après le bip.
+Bonjour, je suis en déplacement toute la semaine. En cas d'urgence, envoyez-moi un message écrit. Je vous rappellerai dès mon retour.

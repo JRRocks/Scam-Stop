@@ -11,3 +11,9 @@ keystore.properties
 
 # Projet local
 .kotlin/
+
+# Voice bench (tools/voice-bench): downloaded models, results and Python caches
+tools/voice-bench/.cache/
+tools/voice-bench/.venv/
+tools/voice-bench/out/
+__pycache__/
