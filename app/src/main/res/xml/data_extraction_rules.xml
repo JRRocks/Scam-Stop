@@ -1,9 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Nothing leaves the phone. Android walks each storage area on its own, so every one is
+    named: excluding "root" alone leaves the preferences (journal, allowed and called numbers)
+    in a device-to-device transfer, which ignores allowBackup="false" since Android 12.
+-->
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
+        <exclude domain="device_root" path="." />
+        <exclude domain="device_file" path="." />
+        <exclude domain="device_database" path="." />
+        <exclude domain="device_sharedpref" path="." />
     </cloud-backup>
     <device-transfer>
         <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
+        <exclude domain="device_root" path="." />
+        <exclude domain="device_file" path="." />
+        <exclude domain="device_database" path="." />
+        <exclude domain="device_sharedpref" path="." />
     </device-transfer>
 </data-extraction-rules>
