@@ -51,9 +51,13 @@ class NonContactCallScreeningService : CallScreeningService() {
     }
 
     /** Abroad, a number without a country code is a local one, not a French one. */
-    private fun isOnFrenchNetwork(): Boolean {
-        val telephony = getSystemService(TelephonyManager::class.java) ?: return true
-        val country = telephony.networkCountryIso.orEmpty().ifBlank { telephony.simCountryIso.orEmpty() }
-        return country.isBlank() || country.lowercase(Locale.ROOT) in FrenchNumbers.NETWORK_COUNTRIES
+    private fun isOnFrenchNetwork(): Boolean = try {
+        val telephony = getSystemService(TelephonyManager::class.java)
+        val country = telephony?.networkCountryIso.orEmpty().ifBlank { telephony?.simCountryIso.orEmpty() }
+        country.isBlank() || country.lowercase(Locale.ROOT) in FrenchNumbers.NETWORK_COUNTRIES
+    } catch (e: SecurityException) {
+        // Some builds guard these getters. Nothing may stand between a call and its answer:
+        // without the country, a national number reads as it does at home.
+        true
     }
 }
